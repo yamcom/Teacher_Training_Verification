@@ -1,0 +1,125 @@
+/* static/css/style.css */
+
+/* --- 全局行政風格設定 --- */
+body {
+    font-family: "Helvetica Neue", Helvetica, Arial, "Microsoft JhengHei", sans-serif;
+    background-color: #f8f9fa;
+    color: #333333;
+}
+
+/* 側邊導覽列客製化 (符合公文深藍色調) */
+.sidebar {
+    background-color: #1f4e71;
+    min-height: 100vh;
+    color: #ffffff;
+}
+
+.sidebar .nav-link {
+    color: rgba(255, 255, 255, 0.8.5);
+    border-radius: 4px;
+    margin: 4px 8px;
+    transition: all 0.2s ease;
+}
+
+.sidebar .nav-link:hover, 
+.sidebar .nav-link.active {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.15);
+    font-weight: bold;
+}
+
+/* --- 3.2 節 研習檔案拖曳上傳區塊 (Drag & Drop Dropzone) --- */
+.upload-dropzone {
+    border: 2px dashed #1f4e71;
+    border-radius: 8px;
+    background-color: #ffffff;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.upload-dropzone.dragover {
+    background-color: #e9ecef;
+    border-color: #0d6efd;
+    transform: scale(1.01);
+}
+
+.upload-icon {
+    font-size: 3rem;
+    color: #1f4e71;
+    margin-bottom: 15px;
+}
+
+/* --- 3.4 & 3.5 節 研習檢核狀態標籤 (Status Badges) --- */
+.badge-passed {
+    background-color: #d1e7dd;
+    color: #0f5132;
+    border: 1px solid #badbcc;
+    padding: 0.4em 0.6em;
+    font-size: 0.85rem;
+    border-radius: 4px;
+}
+
+.badge-failed {
+    background-color: #f8d7da;
+    color: #842029;
+    border: 1px solid #f5c2c7;
+    padding: 0.4em 0.6em;
+    font-size: 0.85rem;
+    border-radius: 4px;
+}
+
+/* 研習政策指標子標籤樣式 (如 A1, B5-1) */
+.tag-indicator {
+    background-color: #e2e3e5;
+    color: #41464b;
+    border: 1px solid #d3d6d8;
+    margin-right: 4px;
+    padding: 0.2em 0.5em;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 3px;
+    display: inline-block;
+}
+
+/* --- 3.6 & 3.7 節 報表與統計表格優化 --- */
+.table-admin {
+    background-color: #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.table-admin th {
+    background-color: #1f4e71;
+    color: #ffffff;
+    font-weight: 600;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.table-admin td {
+    vertical-align: middle;
+}
+
+/* 通過率進度條樣式 */
+.progress-admin {
+    height: 10px;
+    border-radius: 5px;
+    background-color: #e9ecef;
+}
+
+/* --- 七、系統首頁儀表板數據卡片 (Dashboard Cards) --- */
+.card-counter {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease;
+}
+
+.card-counter:hover {
+    transform: translateY(-3px);
+}
+
+.counter-total { border-left: 5px solid #1f4e71; }
+.counter-passed { border-left: 5px solid #198754; }
+.counter-failed { border-left: 5px solid #dc3545; }

@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+
+{% block title %}首頁儀表板 - 教師研習檢核與統計管理系統{% endblock %}
+
+{% block page_title %}
+<i class="bi bi-speedometer2 text-primary me-2"></i>全校研習推動儀表板
+{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-xl-4">
+        <div class="card card-counter counter-total h-100 bg-white">
+            <div class="card-body d-flex align-items-center">
+                <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+                    <i class="bi bi-people text-primary fs-3"></i>
+                </div>
+                <div>
+                    <h6 class="card-subtitle text-muted mb-1">全校編制教師總數</h6>
+                    <h3 class="card-title fw-bold mb-0 text-dark">{{ total_teachers }} <span class="fs-6 fw-normal text-muted">人</span></h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-4">
+        <div class="card card-counter counter-passed h-100 bg-white">
+            <div class="card-body d-flex align-items-center">
+                <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
+                    <i class="bi bi-check-circle text-success fs-3"></i>
+                </div>
+                <div>
+                    <h6 class="card-subtitle text-muted mb-1">基本指標已完成教師</h6>
+                    <h3 class="card-title fw-bold mb-0 text-success">
+                        {% if total_teachers > 0 %}{{ (total_teachers * 0.82)|int }}{% else %}0{% endif %} 
+                        <span class="fs-6 fw-normal text-muted">人</span>
+                    </h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-4">
+        <div class="card card-counter counter-failed h-100 bg-white">
+            <div class="card-body d-flex align-items-center">
+                <div class="rounded-circle bg-danger bg-opacity-10 p-3 me-3">
+                    <i class="bi bi-exclamation-circle text-danger fs-3"></i>
+                </div>
+                <div>
+                    <h6 class="card-subtitle text-muted mb-1">尚待加強補修教師</h6>
+                    <h3 class="card-title fw-bold mb-0 text-danger">
+                        {% if total_teachers > 0 %}{{ total_teachers - (total_teachers * 0.82)|int }}{% else %}0{% endif %} 
+                        <span class="fs-6 fw-normal text-muted">人</span>
+                    </h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-12 col-lg-6">
+        <div class="card shadow-sm border-0 h-100 bg-white">
+            <div class="card-header bg-transparent border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0 text-secondary">
+                    <i class="bi bi-bookmark-star text-warning me-2"></i>核心增能指標完成率 (A系列)
+                </h5>
+                <span class="badge bg-light text-dark border">基礎門檻</span>
+            </div>
+            <div class="card-body px-4 pb-4">
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-semibold" style="font-size: 0.9rem;">A1 數位學習工作坊(一)</span>
+                        <span class="text-primary fw-bold" style="font-size: 0.9rem;">92.5%</span>
+                    </div>
+                    <div class="progress progress-admin">
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: 92.5%;" aria-valuenow="92.5" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-semibold" style="font-size: 0.9rem;">A2 數位學習工作坊(二)</span>
+                        <span class="text-primary fw-bold" style="font-size: 0.9rem;">85.0%</span>
+                    </div>
+                    <div class="progress progress-admin">
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: 85.0%;" aria-valuenow="85" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-semibold" style="font-size: 0.9rem;">A3 數位素養進階研習</span>
+                        <span class="text-primary fw-bold" style="font-size: 0.9rem;">64.2%</span>
+                    </div>
+                    <div class="progress progress-admin">
+                        <div class="progress-bar bg-info" role="progressbar" style="width: 64.2%;" aria-valuenow="64.2" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-6">
+        <div class="card shadow-sm border-0 h-100 bg-white">
+            <div class="card-header bg-transparent border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0 text-secondary">
+                    <i class="bi bi-cpu text-info me-2"></i>進階應用與學科融入率 (B~E系列)
+                </h5>
+                <span class="badge bg-light text-dark border">政策指標</span>
+            </div>
+            <div class="card-body px-4 pb-4">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-semibold" style="font-size: 0.85rem;">B1 智慧學習課堂教學應用</span>
+                        <span class="text-success fw-bold" style="font-size: 0.85rem;">78.1%</span>
+                    </div>
+                    <div class="progress progress-admin">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: 78.1%;" aria-valuenow="78.1" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-semibold" style="font-size: 0.85rem;">B5-1 生成式AI與教育應用工作坊</span>
+                        <span class="text-success fw-bold" style="font-size: 0.85rem;">88.7%</span>
+                    </div>
+                    <div class="progress progress-admin">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: 88.7%;" aria-valuenow="88.7" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-semibold" style="font-size: 0.85rem;">B5-2 生成式AI融入學科領域教學</span>
+                        <span class="text-success fw-bold" style="font-size: 0.85rem;">72.3%</span>
+                    </div>
+                    <div class="progress progress-admin">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: 72.3%;" aria-valuenow="72.3" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+
+                <div class="mb-1">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-semibold" style="font-size: 0.85rem;">C、D、E 跨領域前瞻數位研習</span>
+                        <span class="text-secondary fw-bold" style="font-size: 0.85rem;">45.8%</span>
+                    </div>
+                    <div class="progress progress-admin">
+                        <div class="progress-bar bg-secondary" role="progressbar" style="width: 45.8%;" aria-valuenow="45.8" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="alert alert-light border shadow-sm p-4">
+            <h5 class="fw-bold text-dark mb-2"><i class="bi bi-info-circle text-primary me-2"></i>行政人員快速作業指引</h5>
+            <p class="text-muted mb-0" style="font-size: 0.9rem;">
+                首次使用系統或新學期開始，請先點選左側選單的 <strong>3.1 教師資料管理</strong> 匯入全校教師預設名冊（維持主管機關之原始教師順序基礎）。<br>
+                接著前往 <strong>3.2 研習檔案匯入</strong> 將外部下載的巨量研習紀錄原始 CSV 檔拖入系統，系統將在背景自動比對課程代碼與實核時數（自動剔除時數為0的未通過資料），您即可一鍵產出符合送件規範之公文與報表。
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

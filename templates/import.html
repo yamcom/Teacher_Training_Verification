@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block title %}研習資料匯入 - 教師研習檢核與統計管理系統 (TTVS){% endblock %}
+
+{% block page_title %}
+<i class="bi bi-file-earmark-arrow-up-fill text-primary me-2"></i>3.2 研習資料匯入與行政檢核
+{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm border-0 bg-white mb-4">
+    <div class="card-body p-4">
+        <h5 class="fw-bold text-secondary mb-2"><i class="bi bi-info-circle-fill text-info me-2"></i>行政智慧檢核作業說明</h5>
+        <p class="text-muted small mb-0">
+            本區塊支援將外部研習系統導出的原始檔案進行批量導入。系統將自動根據<strong>「課程代碼」</strong>進行課程唯一性比對，並依據<strong>「實核時數 > 0」</strong>之原則自動過濾通過名單（自動剔除時數為0之未通過紀錄）。
+        </p>
+        <div class="mt-2 text-muted-50" style="font-size: 0.8rem;">
+            <i class="bi bi-paperclip me-1"></i><strong>支援格式：</strong> Microsoft Excel (`.xlsx`, `.xls`)、標準文字檔 (`.csv`)、Word表格 (`.docx`)
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-12 col-xl-8">
+        <div class="card shadow-sm border-0 bg-white h-100">
+            <div class="card-header bg-transparent border-0 pt-4 px-4">
+                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-cloud-arrow-up text-primary me-2"></i>全校教師研習紀錄匯入</h5>
+            </div>
+            <div class="card-body px-4 pb-4">
+                <div id="uploadDropzone" class="upload-dropzone mb-4" data-target-url="/import/training">
+                    <div class="upload-icon">
+                        <i class="bi bi-file-earmark-arrow-up"></i>
+                    </div>
+                    <h5 class="fw-bold text-secondary">將研習紀錄檔案拖曳至此處</h5>
+                    <p class="text-muted small mb-3">或點擊此處瀏覽電腦中的檔案</p>
+                    <span class="btn btn-sm btn-outline-primary px-3">選擇研習檔案</span>
+                    <input type="file" id="fileInput" class="d-none" accept=".csv,.xlsx,.xls,.docx">
+                </div>
+
+                <div id="uploadStatusContainer" class="d-none">
+                    <div class="progress mb-3" style="height: 12px; border-radius: 6px;">
+                        <div id="uploadProgressBar" class="progress-bar progress-bar-striped bg-success" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <div id="statusMessage" class="alert alert-info mb-0" role="alert">
+                        ⚙️ 正在初始化智慧檢核核心，請稍候...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-xl-4">
+        <div class="card shadow-sm border-0 bg-white h-100">
+            <div class="card-header bg-transparent border-0 pt-4 px-4">
+                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-tools text-warning me-2"></i>快捷名冊控管箱</h5>
+            </div>
+            <div class="card-body px-4 pb-4 d-flex flex-column justify-content-between">
+                <div class="mb-4">
+                    <p class="text-muted small">
+                        進行研習大數據檢核前，系統必須先擁有全校基本名冊，才能將研習時數正確歸檔至特定教師名下並維持<strong>原始送件行政順序</strong>。若您尚未建立名冊，請利用下方按鈕一鍵導入：
+                    </p>
+                    <div class="p-3 bg-light rounded border mb-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bi bi-filetype-csv text-success fs-4 me-2"></i>
+                            <span class="fw-bold small text-secondary">預設教師名冊範本格式</span>
+                        </div>
+                        <small class="text-muted-50 d-block" style="font-size: 0.75rem;">必須包含欄位：<strong>職位</strong>、<strong>姓名</strong>、教師編號</small>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <a href="/teachers" class="btn btn-sm btn-outline-secondary text-start py-2">
+                        <i class="bi bi-pencil-square me-2"></i>前往 3.1 手動增修教師名冊
+                    </a>
+                    <a href="/trainings" class="btn btn-sm btn-primary text-start py-2">
+                        <i class="bi bi-search me-2"></i>前往 3.5 查詢最新檢核清單
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="accordion shadow-sm" id="accordionFaq">
+            <div class="accordion-item border-0 rounded-3 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button bg-light fw-bold text-secondary py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true">
+                        <i class="bi bi-question-circle text-primary me-2"></i>為什麼有些研習紀錄在匯入時會被「自動跳過（Skipped）」？
+                    </button>
+                </h2>
+                <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#accordionFaq">
+                    <div class="accordion-body bg-white text-muted small">
+                        系統在讀取檔案時，會執行嚴格的行政名冊交叉比對。如果原始研習檔案中紀錄的<strong>【教師姓名】</strong>沒有預先登記在「3.1 教師資料管理」的名冊中（例如代理代課教師、非編制內人員或姓名有錯別字），檢核核心為了確保主管機關審查報表（附件2）的教師原始順序與人數不被污染，會主動將其列入跳過計數。遇到此情形，請先前往教師管理介面手動補登該員姓名即可。
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

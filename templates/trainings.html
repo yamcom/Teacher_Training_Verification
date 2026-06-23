@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+
+{% block title %}教師研習查詢與檢核 - 教師研習檢核與統計管理系統 (TTVS){% endblock %}
+
+{% block page_title %}
+<i class="bi bi-search text-primary me-2"></i>3.5 教師研習查詢與時數檢核
+{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm border-0 bg-white mb-4">
+    <div class="card-header bg-transparent border-0 pt-4 px-4">
+        <h5 class="fw-bold mb-0 text-secondary"><i class="bi bi-funnel me-2"></i>進階多條件篩選</h5>
+    </div>
+    <div class="card-body px-4 pb-4">
+        <form method="GET" action="/trainings" class="row g-3">
+            <div class="col-12 col-sm-6 col-md-4 col-xl-2.5">
+                <label class="form-label small fw-semibold text-muted">教師姓名</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-light"><i class="bi bi-person"></i></span>
+                    <input type="text" name="teacher_name" class="form-control" placeholder="輸入姓名..." value="{{ search_teacher }}">
+                </div>
+            </div>
+            
+            <div class="col-12 col-sm-6 col-md-4 col-xl-2.5">
+                <label class="form-label small fw-semibold text-muted">行政職位 / 班級</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-light"><i class="bi bi-briefcase"></i></span>
+                    <input type="text" name="position" class="form-control" placeholder="輸入職位..." value="{{ search_position }}">
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-md-4 col-xl-2">
+                <label class="form-label small fw-semibold text-muted">課程代碼</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-light"><i class="bi bi-hash"></i></span>
+                    <input type="text" name="course_code" class="form-control" placeholder="輸入代碼..." value="{{ search_code }}">
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-md-4 col-xl-3">
+                <label class="form-label small fw-semibold text-muted">研習課程名稱關鍵字</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-light"><i class="bi bi-file-earmark-text"></i></span>
+                    <input type="text" name="training_title" class="form-control" placeholder="關鍵字如：生成式AI、因材網..." value="{{ search_title }}">
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-md-4 col-xl-2">
+                <label class="form-label small fw-semibold text-muted">政策指標標籤 (3.3節)</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-light"><i class="bi bi-tags"></i></span>
+                    <select name="tag" class="form-select form-select-sm">
+                        <option value="">全系列標籤</option>
+                        {% for tag in preset_tags %}
+                        <option value="{{ tag }}" {% if search_tag == tag %}selected{% endif %}>{{ tag }} 指標</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-12 d-flex justify-content-end gap-2 mt-3 border-top pt-3">
+                <a href="/trainings" class="btn btn-sm btn-light border"><i class="bi bi-arrow-counterclockwise me-1"></i>重置條件</a>
+                <button type="submit" class="btn btn-sm btn-primary px-4"><i class="bi bi-search me-1"></i>執行綜合查詢</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 bg-white">
+    <div class="card-header bg-transparent border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0 text-secondary"><i class="bi bi-list-check me-2"></i>全校教師研習檢核清單</h5>
+        <span class="badge bg-secondary-subtle text-secondary border">符合搜尋結果：{{ records|length }} 筆</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-admin table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 15%;">教師基本資料</th>
+                        <th style="width: 12%;">課程代碼</th>
+                        <th style="width: 33%;">研習課程名稱 / 辦理日期</th>
+                        <th style="width: 13%;">判定標籤</th>
+                        <th style="width: 14%;">實核時數更正</th>
+                        <th style="width: 13%;">通過狀態 (3.4節)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in records %}
+                    <tr id="record-row-{{ row.id }}">
+                        <td class="px-3">
+                            <span class="fw-bold text-dark d-block mb-1">{{ row.teacher_name }}</span>
+                            <small class="text-muted bg-light border rounded px-1" style="font-size: 0.75rem;">{{ row.position }}</small>
+                        </td>
+                        
+                        <td class="text-center text-monospace text-secondary small">{{ row.course_code }}</td>
+                        
+                        <td>
+                            <span class="d-block text-wrap small fw-semibold text-secondary mb-1">{{ row.training_title }}</span>
+                            <small class="text-muted-50" style="font-size: 0.75rem;"><i class="bi bi-calendar3 me-1"></i>結束時間: {{ row.course_date or '—' }}</small>
+                        </td>
+                        
+                        <td class="text-center">
+                            {% for tag in row.tags %}
+                            <span class="tag-indicator">{{ tag }}</span>
+                            {% else %}
+                            <span class="text-muted small">—</span>
+                            {% endfor %}
+                        </td>
+                        
+                        <td class="text-center">
+                            <div class="input-group input-group-sm mx-auto" style="width: 90px;">
+                                <input type="number" step="0.5" min="0" class="form-control text-center py-0 px-1 fw-bold" 
+                                       value="{{ row.hours }}" 
+                                       onchange="updateHoursInline('{{ row.id }}', this.value, 'badge-status-{{ row.id }}')">
+                                <span class="input-group-text p-1 small" style="font-size: 0.7rem;">時</span>
+                            </div>
+                        </td>
+                        
+                        <td class="text-center">
+                            <span id="badge-status-{{ row.id }}" class="{% if row.is_passed == '通過' %}badge-passed{% else %}badge-failed{% endif %}">
+                                {{ row.is_passed }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="bi bi-search-heart fs-1 d-block mb-2"></i>未找到任何符合篩選條件的教師研習檢核紀錄。
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/**
+ * 3.5 節 前台即時更正實核時數與非同步狀態連動
+ */
+function updateHoursInline(recordId, newHours, badgeId) {
+    if (newHours === '' || parseFloat(newHours) < 0) {
+        alert('❌ 時數請輸入大於或等於 0 的有效數字！');
+        return;
+    }
+    
+    // 呼叫 static/js/main.js 中宣告的共用全域互動函數
+    updateTeacherHours(recordId, newHours, badgeId);
+}
+</script>
+{% endblock %}

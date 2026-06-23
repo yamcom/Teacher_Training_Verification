@@ -1,0 +1,270 @@
+{% extends 'base.html' %}
+
+{% block title %}教師資料管理 - 教師研習檢核與統計管理系統 (TTVS){% endblock %}
+
+{% block page_title %}
+<i class="bi bi-people-fill text-primary me-2"></i>3.1 教師資料管理
+{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-4">
+    <div class="col-12 col-lg-8">
+        <div class="card shadow-sm border-0 bg-white h-100">
+            <div class="card-body py-2">
+                <form method="GET" action="/teachers" class="row g-2 align-items-center">
+                    <div class="col-12 col-sm-5">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light"><i class="bi bi-person"></i></span>
+                            <input type="text" name="name" class="form-control" placeholder="搜尋教師姓名..." value="{{ search_name }}">
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-5">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light"><i class="bi bi-briefcase"></i></span>
+                            <input type="text" name="position" class="form-control" placeholder="搜尋行政職位..." value="{{ search_position }}">
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-2 d-grid">
+                        <button type="submit" class="btn btn-sm btn-primary">
+                            <i class="bi bi-search me-1"></i>篩選
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-4 d-flex justify-content-lg-end align-items-center gap-2">
+        <button class="btn btn-sm btn-success" onclick="document.getElementById('rosterFileInput').click();">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i>批量匯入名冊
+        </button>
+        <input type="file" id="rosterFileInput" class="d-none" accept=".csv,.xlsx,.xls" onchange="uploadRosterFile(this)">
+        
+        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addTeacherModal">
+            <i class="bi bi-person-plus me-1"></i>手動新增教師
+        </button>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 bg-white">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-admin table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 10%;">序號</th>
+                        <th style="width: 25%;">行政職位 / 班級</th>
+                        <th style="width: 25%;">教師姓名</th>
+                        <th style="width: 20%;">教師編號</th>
+                        <th style="width: 20%;">行政操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for teacher in teachers %}
+                    <tr id="teacher-row-{{ teacher.id }}">
+                        <td class="text-center fw-bold text-muted">{{ loop.index }}</td>
+                        <td class="text-center">{{ teacher.position }}</td>
+                        <td class="text-center fw-bold text-secondary">{{ teacher.name }}</td>
+                        <td class="text-center text-monospace">{{ teacher.teacher_code or '—' }}</td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-secondary py-1" onclick="openEditModal('{{ teacher.id }}', '{{ teacher.position }}', '{{ teacher.name }}', '{{ teacher.teacher_code or '' }}')">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                                <button class="btn btn-outline-danger py-1" onclick="deleteTeacher('{{ teacher.id }}', '{{ teacher.name }}')">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">
+                            <i class="bi bi-folder-x fs-2 d-block mb-2"></i>目前系統中無符合條件的教師名冊資料，請先匯入或手動建立。
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addTeacherModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-person-plus-fill text-primary me-2"></i>手動新增教師基本資料</h5>
+                <button type="button" class="btn-close" data-bs-shadow="none" data-bs-shadow="none" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addTeacherForm" onsubmit="submitAddTeacher(event)">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-secondary">行政職位 / 班級職稱 <span class="text-danger">*</span></label>
+                        <input type="text" name="position" class="form-control form-control-sm" placeholder="例如：校長、教務主任、一、１導師、科任" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-secondary">教師姓名 <span class="text-danger">*</span></label>
+                        <input type="text" name="name" class="form-control form-control-sm" placeholder="請輸入完整姓名" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-secondary">教師編號 (選填)</label>
+                        <input type="text" name="teacher_code" class="form-control form-control-sm" placeholder="請輸入學校內部員工編號">
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-sm btn-primary">確認建立</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editTeacherModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-pencil-square text-warning me-2"></i>修改教師基本資料</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editTeacherForm" onsubmit="submitEditTeacher(event)">
+                <input type="hidden" id="edit_teacher_id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-secondary">行政職位 / 班級職稱 <span class="text-danger">*</span></label>
+                        <input type="text" id="edit_position" name="position" class="form-control form-control-sm" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-secondary">教師姓名 <span class="text-danger">*</span></label>
+                        <input type="text" id="edit_name" name="name" class="form-control form-control-sm" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-secondary">教師編號 (選填)</label>
+                        <input type="text" id="edit_code" name="teacher_code" class="form-control form-control-sm">
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-sm btn-warning">確認儲存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/**
+ * 處理預設教師基本名冊批量匯入 (3.1節)
+ */
+function uploadRosterFile(input) {
+    if (input.files.length === 0) return;
+    
+    const file = input.files[0];
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    // 發送至 teacher_routes 內定義的 API
+    fetch('/import/teachers', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            alert('❌ 名冊匯入失敗：' + data.error);
+        } else {
+            alert('🎉 ' + data.message);
+            window.location.reload(); # 重新整理載入排好行政順序的名冊
+        }
+    })
+    .catch(err => alert('連線發生錯誤: ' + err.message));
+}
+
+/**
+ * 送出手動新增教師表單
+ */
+function submitAddTeacher(e) {
+    e.preventDefault();
+    const form = document.getElementById('addTeacherForm');
+    const formData = new FormData(form);
+    
+    fetch('/teacher/add', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            alert('❌ 新增失敗：' + data.error);
+        } else {
+            alert('✅ ' + data.message);
+            window.location.reload();
+        }
+    });
+}
+
+/**
+ * 開啟修改視窗並帶入舊有數據
+ */
+function openEditModal(id, pos, name, code) {
+    document.getElementById('edit_teacher_id').value = id;
+    document.getElementById('edit_position').value = pos;
+    document.getElementById('edit_name').value = name;
+    document.getElementById('edit_code').value = code;
+    
+    const modal = new bootstrap.Modal(document.getElementById('editTeacherModal'));
+    modal.show();
+}
+
+/**
+ * 送出修改教師表單
+ */
+function submitEditTeacher(e) {
+    e.preventDefault();
+    const id = document.getElementById('edit_teacher_id').value;
+    const form = document.getElementById('editTeacherForm');
+    const formData = new FormData(form);
+    
+    fetch(`/teacher/edit/${id}`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            alert('❌ 修改失敗：' + data.error);
+        } else {
+            alert('✅ ' + data.message);
+            window.location.reload();
+        }
+    });
+}
+
+/**
+ * 手動刪除單一教師資料與其關聯紀錄
+ */
+function deleteTeacher(id, name) {
+    if (!confirm(`⚠️ 您確定要將教師【${name}】從系統中徹底移除嗎？\n此作業將會一併清除其名下所有的數位學習研習紀錄！`)) {
+        return;
+    }
+    
+    fetch(`/teacher/delete/${id}`, {
+        method: 'POST'
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            alert('❌ 刪除失敗：' + data.error);
+        } else {
+            // 前台不刷新，直接利用動態特效移除表格中的該列資料
+            const row = document.getElementById(`teacher-row-${id}`);
+            if (row) row.remove();
+            alert('🗑️ ' + data.message);
+        }
+    });
+}
+</script>
+{% endblock %}

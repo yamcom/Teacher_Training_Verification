@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block title %}研習指標統計分析 - 教師研習檢核與統計管理系統 (TTVS){% endblock %}
+
+{% block page_title %}
+<i class="bi bi-graph-up-arrow text-primary me-2"></i>3.6 政策指標統計與分析功能
+{% endblock %}
+
+{% block content %}
+{% if error %}
+<div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error }}
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+{% endif %}
+
+<div class="card shadow-sm border-0 bg-white mb-4">
+    <div class="card-body p-4 d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+            <h5 class="fw-bold text-dark mb-1"><i class="bi bi-printer me-2"></i>教育局送件審查報表導出</h5>
+            <p class="text-muted small mb-0">系統已依據全校編制教師總數，自動完成各項政策標籤的修課率大數據計算，您可直接點選右側按鈕下載發文附件。</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/export/tag_analysis_report" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-file-earmark-word text-primary me-1"></i>下載分析報告 (.docx)
+            </a>
+            <a href="/export/all_school_excel" class="btn btn-sm btn-success">
+                <i class="bi bi-file-earmark-excel me-1"></i>匯出全校明細總表 (.xlsx)
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 bg-white">
+    <div class="card-header bg-transparent border-0 pt-4 px-4">
+        <h5 class="fw-bold mb-0 text-secondary"><i class="bi bi-table me-2"></i>數位學習各類別達成率一覽表</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-admin table-striped align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 10%;">序號</th>
+                        <th style="width: 25%;">研習類別 (政策指標項目)</th>
+                        <th style="width: 15%;">合格已通過人數</th>
+                        <th style="width: 15%;">尚待補修人數</th>
+                        <th style="width: 35%;">全校達成率進度條 (通過率公式計算)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in stats %}
+                    <tr>
+                        <td class="text-center fw-bold text-muted">{{ loop.index }}</td>
+                        
+                        <td class="px-4 fw-bold text-secondary">
+                            <span class="tag-indicator px-2 py-1 bg-primary bg-opacity-10 text-primary border-primary border-opacity-25">{{ row.研習類別 }}</span>
+                            <small class="text-muted ms-2">
+                                {% if row.研習類別 == 'A1' %}數位學習工作坊(一)
+                                {% elif row.研習類別 == 'A2' %}數位學習工作坊(二)
+                                {% elif row.研習類別 == 'A3' %}數位素養進階研習
+                                {% elif row.研習類別 == 'B1' %}智慧學習課堂教學應用
+                                {% elif row.研習類別 == 'B5-1' %}生成式AI與教育應用
+                                {% elif row.研習類別 == 'B5-2' %}生成式AI融入學科教學
+                                {% else %}跨領域前瞻數位增能指標
+                                {% endif %}
+                            </small>
+                        </td>
+                        
+                        <td class="text-center text-success fw-bold fs-5">{{ row.通過人數 }} <span class="fs-6 fw-normal text-muted">人</span></td>
+                        
+                        <td class="text-center text-danger fw-bold fs-5">
+                            {% if row.未通過人數 > 0 %}
+                                {{ row.未通過人數 }} <span class="fs-6 fw-normal text-muted">人</span>
+                            {% else %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle py-1 px-2 small" style="font-size: 0.75rem;">全員通關</span>
+                            {% endif %}
+                        </td>
+                        
+                        <td class="px-4">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small class="text-muted fw-semibold">全校達成指標比例</small>
+                                <span class="fw-bold text-primary" style="font-size: 0.9rem;">{{ row.通過率 }}</span>
+                            </div>
+                            <div class="progress progress-admin" style="height: 12px; border-radius: 6px;">
+                                <div class="progress-bar {% if '100' in row.通過率 or '9' in row.通過率 %}bg-success{% elif '8' in row.通過率 or '7' in row.通過率 %}bg-primary{% else %}bg-warning{% endif %}" 
+                                     role="progressbar" 
+                                     style="width: {{ row.通過率 }};" 
+                                     aria-valuenow="{{ row.通過人數 }}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted">
+                            <i class="bi bi-bar-chart-line fs-1 d-block mb-2"></i>系統中尚無研習資料可供進行大數據標籤統計，請先前往【3.2 研習檔案匯入】上傳數據。
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="alert alert-light border shadow-sm p-4 mb-0">
+            <h6 class="fw-bold text-dark mb-2"><i class="bi bi-calculator text-primary me-2"></i>行政審查數據計算備忘錄</h6>
+            <ul class="text-muted small mb-0 ps-3">
+                <li class="mb-1"><strong>通過率計算公式：</strong> 通過人數（該項指標研習實核時數 &gt; 0 之不重複教師數） ÷ 全校教師總人數 × 100% [cite: 78, 104]。</li>
+                <li class="mb-1"><strong>多重標籤採計：</strong> 若單一教師在同一項指標中擁有複數筆修課紀錄，系統去重機制僅會採計為 1 人次通過，不會造成數據膨脹，完全對齊局端查核常規。</li>
+                <li><strong>報告更新頻率：</strong> 本頁面數據為「即時非同步更新」，當行政人員在【3.5 教師研習查詢】中手動微調任何時數，此處的通過人數與進度條將會毫秒級連動更新。</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

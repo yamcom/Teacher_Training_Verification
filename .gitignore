@@ -1,0 +1,18 @@
+# 虛擬環境
+.venv/
+venv/
+ENV/
+
+# Python 快取
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 環境變數與金鑰（如果有的話）
+.env
+
+
+# 客製化資料
+main.py.bak
+uv.lock

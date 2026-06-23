@@ -1,0 +1,12 @@
+# 後端網頁框架與資料庫 ORM
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+SQLAlchemy==2.0.31
+
+# 巨量研習資料分析與試算表處理 (支援 .csv, .xlsx, .xls)
+pandas==2.2.2
+openpyxl==3.1.5
+xlrd==2.0.1
+
+# 正式公文與報告輸出 (.docx)
+python-docx==1.1.2
