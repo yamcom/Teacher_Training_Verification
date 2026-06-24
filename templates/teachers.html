@@ -95,7 +95,7 @@
         <div class="modal-content">
             <div class="modal-header bg-light">
                 <h5 class="modal-title fw-bold text-dark"><i class="bi bi-person-plus-fill text-primary me-2"></i>手動新增教師基本資料</h5>
-                <button type="button" class="btn-close" data-bs-shadow="none" data-bs-shadow="none" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="addTeacherForm" onsubmit="submitAddTeacher(event)">
                 <div class="modal-body">
@@ -152,12 +152,10 @@
         </div>
     </div>
 </div>
-{% endblock %}
-
 {% block extra_js %}
 <script>
 /**
- * 處理預設教師基本名冊批量匯入 (3.1節)
+ * 3.1 節 處理預設教師基本名冊批量匯入
  */
 function uploadRosterFile(input) {
     if (input.files.length === 0) return;
@@ -166,7 +164,6 @@ function uploadRosterFile(input) {
     const formData = new FormData();
     formData.append('file', file);
     
-    // 發送至 teacher_routes 內定義的 API
     fetch('/import/teachers', {
         method: 'POST',
         body: formData
@@ -177,7 +174,7 @@ function uploadRosterFile(input) {
             alert('❌ 名冊匯入失敗：' + data.error);
         } else {
             alert('🎉 ' + data.message);
-            window.location.reload(); # 重新整理載入排好行政順序的名冊
+            window.location.reload(); // 修正：此處已改為標準的 JavaScript 註解符號
         }
     })
     .catch(err => alert('連線發生錯誤: ' + err.message));
@@ -203,7 +200,8 @@ function submitAddTeacher(e) {
             alert('✅ ' + data.message);
             window.location.reload();
         }
-    });
+    })
+    .catch(err => alert('系統異常: ' + err.message));
 }
 
 /**
@@ -259,7 +257,6 @@ function deleteTeacher(id, name) {
         if (data.error) {
             alert('❌ 刪除失敗：' + data.error);
         } else {
-            // 前台不刷新，直接利用動態特效移除表格中的該列資料
             const row = document.getElementById(`teacher-row-${id}`);
             if (row) row.remove();
             alert('🗑️ ' + data.message);
@@ -267,4 +264,5 @@ function deleteTeacher(id, name) {
     });
 }
 </script>
+{% endblock %}
 {% endblock %}

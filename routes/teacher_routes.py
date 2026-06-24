@@ -61,7 +61,8 @@ def add_teacher():
 def edit_teacher(id):
     """修改教師基本資料"""
     try:
-        teacher = Teacher.query.get_or_400(id)
+        # 修正：將 get_or_400 改為標準的 get_or_404
+        teacher = Teacher.query.get_or_404(id)
         teacher.position = request.form.get('position', '').strip()
         teacher.name = request.form.get('name', '').strip()
         teacher.teacher_code = request.form.get('teacher_code', '').strip()
@@ -80,7 +81,8 @@ def edit_teacher(id):
 def delete_teacher(id):
     """刪除教師基本資料與其關聯之研習紀錄"""
     try:
-        teacher = Teacher.query.get_or_400(id)
+        # 修正：將 get_or_400 改為標準的 get_or_404
+        teacher = Teacher.query.get_or_404(id)
         
         # 為了維持資料庫完整性，手動清除該教師的所有研習紀錄關係
         for record in teacher.records:
@@ -98,7 +100,6 @@ def delete_teacher(id):
 def import_teacher_roster():
     """
     3.1 批量匯入教師名冊 (樣板對照基礎)
-    一般行政人員上傳行政預設順序之「基本教師名冊」CSV/Excel 檔，系統會依此順序建立。
     """
     if 'file' not in request.files:
         return jsonify({"error": "未提供檔案"}), 400
@@ -111,12 +112,10 @@ def import_teacher_roster():
     file.save(file_path)
     
     try:
-        # 調用先前寫好的 ImportService 進行欄位對齊與清洗
         teacher_list = ImportService.parse_teacher_roster(file_path)
         
         success_count = 0
         for t_data in teacher_list:
-            # 依姓名與職稱檢查，若不存在則直接新增 (維持上傳之原始順序)
             existing = Teacher.query.filter_by(name=t_data['name'], position=t_data['position']).first()
             if not existing:
                 teacher = Teacher(

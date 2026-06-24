@@ -14,5 +14,10 @@ __pycache__/
 
 
 # 客製化資料
+database.db
 main.py.bak
 uv.lock
+backups/
+exports/
+reports/
+uploads/

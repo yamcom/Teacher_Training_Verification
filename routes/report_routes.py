@@ -1,11 +1,3 @@
-from services.report_service import ReportService
-
-@app.route('/export/tag_analysis_report')
-def export_report():
-    # 調用服務生成 Word
-    file_path = ReportService.export_tag_analysis_report(app.config['REPORT_FOLDER'])
-    return send_file(file_path, as_attachment=True)
-	
 # routes/report_routes.py
 from flask import Blueprint, current_app, send_file, render_template, jsonify, make_response
 from services.export_service import ExportService
@@ -73,7 +65,7 @@ def download_all_school_excel():
 @report_bp.route('/export/official_word_report', methods=['GET'])
 def download_official_word_report():
     """
-    路由擴充建議：匯出正式簽呈公文格式 (Word .docx)
+    第八章 報表功能：匯出正式簽呈公文格式 (Word .docx)
     自動帶入發文資訊、主旨、行政說明及前 10 筆檢核摘要表格。
     """
     try:
@@ -93,7 +85,7 @@ def download_official_word_report():
 @report_bp.route('/export/tag_analysis_report', methods=['GET'])
 def download_tag_analysis_report():
     """
-    路由擴充建議：下載美化版「數位學習研習標籤統計分析報告」(Word .docx)
+    第八章 報表功能：下載美化版「數位學習研習標籤統計分析報告」(Word .docx)
     內含全校通過率公式計算結果、深藍色行政風表格與策進建議。
     """
     try:
@@ -108,3 +100,38 @@ def download_tag_analysis_report():
         )
     except Exception as e:
         return jsonify({"error": f"產出統計分析報告失敗: {str(e)}"}), 500
+        
+@report_bp.route('/api/reports/pending_teachers/<string:tag_name>', methods=['GET'])
+def get_pending_teachers(tag_name):
+    """
+    行政優化 API：根據指定的政策指標標籤，撈出全校尚未通過（時數為 0 或無紀錄）的教師名單
+    """
+    from models import Teacher, TrainingRecord, Training
+    from services.tag_service import TagService
+    
+    try:
+        tag_name = tag_name.strip().upper()
+        all_teachers = Teacher.query.order_by(Teacher.id).all()
+        pending_list = []
+        
+        for teacher in all_teachers:
+            # 撈取該教師針對此標籤是否已有大於 0 的時數紀錄
+            is_passed = False
+            for record in teacher.records:
+                # 解析課程名稱所屬標籤
+                course_tags = TagService.parse_training_name(record.training.title)
+                if tag_name in course_tags and record.hours > 0:
+                    is_passed = True
+                    break
+            
+            # 如果遍歷完發現沒有通過紀錄，就列入尚待補修名單
+            if not is_passed:
+                pending_list.append({
+                    "name": teacher.name,
+                    "position": teacher.position,
+                    "teacher_code": teacher.teacher_code or "—"
+                })
+                
+        return jsonify({"tag": tag_name, "pending_teachers": pending_list}), 200
+    except Exception as e:
+        return jsonify({"error": f"無法撈取名單: {str(e)}"}), 500

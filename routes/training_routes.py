@@ -2,7 +2,6 @@
 from flask import Blueprint, render_template, request, jsonify
 from models import db, Training, TrainingRecord, Teacher
 from services.tag_service import TagService
-from datetime import datetime
 
 # 建立研習課程與查詢專屬的藍圖
 training_bp = Blueprint('training', __name__)
@@ -75,7 +74,8 @@ def delete_record(id):
     手動修正功能：刪除某一筆錯誤或重複匯入的教師研習紀錄
     """
     try:
-        record = TrainingRecord.query.get_or_400(id)
+        # 修正：將 get_or_400 改為標準的 get_or_404
+        record = TrainingRecord.query.get_or_404(id)
         teacher_name = record.teacher.name
         training_title = record.training.title
         
@@ -99,7 +99,8 @@ def update_hours():
         if not record_id or new_hours is None:
             return jsonify({"error": "缺少必要參數"}), 400
 
-        record = TrainingRecord.query.get_or_400(int(record_id))
+        # 修正：將 get_or_400 改為標準的 get_or_404
+        record = TrainingRecord.query.get_or_404(int(record_id))
         record.hours = float(new_hours)
         db.session.commit()
 

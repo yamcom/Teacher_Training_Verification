@@ -10,7 +10,7 @@
 {% if error %}
 <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
     <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error }}
-    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
 </div>
 {% endif %}
 
@@ -68,11 +68,16 @@
                         
                         <td class="text-center text-success fw-bold fs-5">{{ row.通過人數 }} <span class="fs-6 fw-normal text-muted">人</span></td>
                         
-                        <td class="text-center text-danger fw-bold fs-5">
-                            {% if row.未通過人數 > 0 %}
-                                {{ row.未通過人數 }} <span class="fs-6 fw-normal text-muted">人</span>
+                        <td class="text-center">
+                            {% if row.未通過人數 and row.未通過人數|int > 0 %}
+                                <a href="javascript:void(0);" 
+                                   class="text-danger fw-bold fs-5 text-decoration-none pending-link"
+                                   onclick="showPendingTeachers('{{ row.研習類別 }}')"
+                                   title="點擊查看未通過教師名單">
+                                    {{ row.未通過人數 }} <span class="fs-6 fw-bold text-danger">人</span>
+                                </a>
                             {% else %}
-                                <span class="badge bg-success-subtle text-success border border-success-subtle py-1 px-2 small" style="font-size: 0.75rem;">全員通關</span>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle py-1 px-2 fw-semibold" style="font-size: 0.8rem;">0 人 (全員通關)</span>
                             {% endif %}
                         </td>
                         
@@ -84,10 +89,7 @@
                             <div class="progress progress-admin" style="height: 12px; border-radius: 6px;">
                                 <div class="progress-bar {% if '100' in row.通過率 or '9' in row.通過率 %}bg-success{% elif '8' in row.通過率 or '7' in row.通過率 %}bg-primary{% else %}bg-warning{% endif %}" 
                                      role="progressbar" 
-                                     style="width: {{ row.通過率 }};" 
-                                     aria-valuenow="{{ row.通過人數 }}" 
-                                     aria-valuemin="0" 
-                                     aria-valuemax="100">
+                                     style="width: {{ row.通過率 }};">
                                 </div>
                             </div>
                         </td>
@@ -95,7 +97,7 @@
                     {% else %}
                     <tr>
                         <td colspan="5" class="text-center py-5 text-muted">
-                            <i class="bi bi-bar-chart-line fs-1 d-block mb-2"></i>系統中尚無研習資料可供進行大數據標籤統計，請先前往【3.2 研習檔案匯入】上傳數據。
+                            <i class="bi bi-bar-chart-line fs-1 d-block mb-2"></i>系統中尚無研習資料可供進行大數據標籤統計。
                         </td>
                     </tr>
                     {% endfor %}
@@ -110,11 +112,111 @@
         <div class="alert alert-light border shadow-sm p-4 mb-0">
             <h6 class="fw-bold text-dark mb-2"><i class="bi bi-calculator text-primary me-2"></i>行政審查數據計算備忘錄</h6>
             <ul class="text-muted small mb-0 ps-3">
-                <li class="mb-1"><strong>通過率計算公式：</strong> 通過人數（該項指標研習實核時數 &gt; 0 之不重複教師數） ÷ 全校教師總人數 × 100% [cite: 78, 104]。</li>
-                <li class="mb-1"><strong>多重標籤採計：</strong> 若單一教師在同一項指標中擁有複數筆修課紀錄，系統去重機制僅會採計為 1 人次通過，不會造成數據膨脹，完全對齊局端查核常規。</li>
-                <li><strong>報告更新頻率：</strong> 本頁面數據為「即時非同步更新」，當行政人員在【3.5 教師研習查詢】中手動微調任何時數，此處的通過人數與進度條將會毫秒級連動更新。</li>
+                <li class="mb-1"><strong>通過率計算公式：</strong> 通過人數 ÷ 全校教師總人數 × 100%。</li>
+                <li class="mb-1"><strong>💡 智慧追蹤：</strong> 您可以直接點擊表格中帶有<strong>紅色粗底線</strong>的數字，系統將會即時為您篩選出該項指標尚未過關的教師名單，方便列印與行政催辦。若顯示為 0 人則代表該指標已全數達標。</li>
             </ul>
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="pendingTeachersModal" data-bs-focus="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-danger bg-opacity-10">
+                <h5 class="modal-title fw-bold text-danger" id="pendingModalTitle">
+                    <i class="bi bi-person-x-fill me-2"></i>尚待補修教師名冊
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0" style="max-height: 400px; overflow-y: auto;">
+                <div id="pendingLoading" class="text-center py-4">
+                    <div class="spinner-border spinner-border-sm text-secondary me-2" role="status"></div>
+                    <span class="text-muted small">正在智慧檢索全校名冊，請稍候...</span>
+                </div>
+                <table class="table table-sm table-hover align-middle mb-0 d-none" id="pendingTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3" style="width: 15%;">序號</th>
+                            <th style="width: 50%;">行政職位 / 班級</th>
+                            <th style="width: 35%;">教師姓名</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pendingListContainer">
+                        </tbody>
+                </table>
+            </div>
+            <div class="modal-footer bg-light py-2">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">關閉視窗</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let pendingModalEntity = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof bootstrap !== 'undefined') {
+        pendingModalEntity = new bootstrap.Modal(document.getElementById('pendingTeachersModal'));
+    }
+});
+
+/**
+ * 非同步撈取並顯示尚未補修的教師名單
+ */
+function showPendingTeachers(tag) {
+    const loading = document.getElementById('pendingLoading');
+    const table = document.getElementById('pendingTable');
+    const container = document.getElementById('pendingListContainer');
+    const title = document.getElementById('pendingModalTitle');
+    
+    title.innerHTML = `<i class="bi bi-person-x-fill me-2"></i>指標【${tag}】尚待補修教師名冊`;
+    loading.classList.remove('d-none');
+    table.classList.add('d-none');
+    container.innerHTML = '';
+    
+    if (pendingModalEntity) pendingModalEntity.show();
+    
+    fetch(`/api/reports/pending_teachers/${tag}`)
+        .then(res => res.json())
+        .then(data => {
+            loading.classList.add('d-none');
+            table.classList.remove('d-none');
+            
+            if (data.pending_teachers && data.pending_teachers.length > 0) {
+                data.pending_teachers.forEach((teacher, idx) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="ps-3 text-muted fw-bold">${idx + 1}</td>
+                        <td><span class="badge bg-light text-secondary border">${teacher.position}</span></td>
+                        <td class="fw-bold text-dark">${teacher.name}</td>
+                    `;
+                    container.appendChild(row);
+                });
+            } else {
+                container.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-success fw-bold"><i class="bi bi-check-circle-fill me-1"></i>太棒了！全校編制內教師已全員通過此指標！</td></tr>`;
+            }
+        })
+        .catch(err => {
+            loading.classList.add('d-none');
+            container.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-danger">❌ 無法撈取名單: ${err.message}</td></tr>`;
+        });
+}
+</script>
+
+<style>
+    .pending-link {
+        border-bottom: 3px solid #dc3545 !important; /* 顯眼的紅色粗底線 */
+        padding-bottom: 2px;
+        display: inline-block;
+        transition: all 0.15s ease-in-out;
+    }
+    .pending-link:hover {
+        color: #bd2130 !important; /* 深紅色懸停 */
+        border-bottom-color: #bd2130 !important;
+        transform: scale(1.08); /* 微微放大引導點擊 */
+    }
+</style>
 {% endblock %}

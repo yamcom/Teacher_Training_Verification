@@ -1,0 +1,252 @@
+{% extends 'base.html' %}
+
+{% block title %}指標關鍵字設定 - 教師研習檢核與統計管理系統 (TTVS){% endblock %}
+
+{% block page_title %}
+<i class="bi bi-gear-fill text-warning me-2"></i>政策指標與關鍵字動態自訂
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pattern-item { transition: all 0.2s ease; }
+    .pattern-item:hover { border-color: #6c757d; }
+    .btn-xs { padding: 0.1rem 0.3rem; font-size: 0.75rem; border-radius: 0.2rem; }
+    .moe-standard { background-color: #f8f9fa; border-left: 4px solid #0dcaf0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm border-0 bg-white mb-4">
+    <div class="card-body p-4">
+        <div class="d-flex align-items-center mb-2">
+            <h5 class="fw-bold text-secondary mb-0"><i class="bi bi-lightbulb text-warning me-2"></i>教育部「精進數位」研習識別指引</h5>
+            <span class="badge bg-info text-dark ms-3">依據 113-116 年師資培訓架構</span>
+        </div>
+        <p class="text-muted small mb-0">
+            本系統已支援教育部<strong>「推動中小學數位學習精進方案」</strong>(<a href="https://pads.moe.edu.tw/download_file.php?file=_upload_b67a86907d85354ecb3196184b06db98.pdf&old=uploads" target="_new">參考資料網址</a>)<br>當教育局精進數位方案發布全新的研習指標（例如全新的 A4 系列），行政主任無需修改程式碼。您可在此直接點選右側按鈕建立新標籤，並填寫網頁標籤或正則表達式（如 <code>r'A4'</code> 或 <code>r'自主學習路徑'</code>）。系統在進行巨量大數據檢核時，將會毫秒級自動套用新規則。
+        </p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-12 col-xl-7">
+        <div class="card shadow-sm border-0 bg-white">
+            <div class="card-header bg-transparent border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0 text-secondary"><i class="bi bi-tags me-2"></i>系統現行指標規則庫</h5>
+                <button class="btn btn-sm btn-primary" onclick="openAddTagModal()">
+                    <i class="bi bi-plus-circle me-1"></i>新增政策指標
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-admin table-striped align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width: 20%;">指標代碼</th>
+                                <th style="width: 60%;">識別關鍵字規則庫 (Regex 模式)</th>
+                                <th style="width: 20%;" class="text-center">行政操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tag, patterns in tag_rules.items() %}
+                            <tr id="tag-row-{{ tag }}">
+                                <td class="px-3 fw-bold text-secondary text-center">
+                                    <span class="tag-indicator px-2 py-1 bg-primary bg-opacity-10 text-primary border-primary border-opacity-25">{{ tag }}</span>
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        {% for pattern in patterns %}
+                                        <span class="badge bg-light text-secondary border small" style="font-family: monospace; font-size: 0.8rem;">{{ pattern }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-secondary py-1 btn-edit-tag" 
+                                                data-tag="{{ tag }}" 
+                                                data-patterns='{{ patterns|tojson }}'
+                                                title="修改規則">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger py-1" onclick="deleteTagRule('{{ tag }}')" title="刪除指標">
+                                            <i class="bi bi-trash3"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center py-5 text-muted">
+                                    <i class="bi bi-folder-x fs-1 d-block mb-2"></i>尚未設定 any 指標。
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-12 col-xl-5">
+        <div class="card shadow-sm border-0 bg-white">
+            <div class="card-header bg-transparent border-0 pt-4 px-4">
+                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-info-square text-info me-2"></i>語法防誤判設定指引</h5>
+            </div>
+            <div class="card-body px-4 pb-4">
+                <div class="moe-standard p-3 mb-3">
+                    <p class="fw-bold text-info small mb-1"><i class="bi bi-file-pdf me-2"></i>精進數位方案官方建議規則</p>
+                    <ul class="text-muted mb-0" style="font-size: 0.75rem;">
+                        <li><strong>A1/A2 識別：</strong> <code>數位學習工作坊[（(][一二12][）)]</code></li>
+                        <li><strong>A3 識別：</strong> <code>精進數位.*A3</code> 或 <code>數位素養.*進階</code></li>
+                        <li><strong>B1 識別：</strong> <code>智慧學習.*教學應用</code></li>
+                    </ul>
+                </div>
+                
+                <p class="text-muted small">通用正規表達式參考：</p>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm small mb-0">
+                        <thead class="table-light text-secondary">
+                            <tr>
+                                <th style="width: 40%;">建議寫法範例</th>
+                                <th style="width: 60%;">行政識別效果說明</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-muted" style="font-size: 0.8rem;">
+                            <tr>
+                                <td><code class="text-danger">精進數位.*A1</code></td>
+                                <td>匹配包含「精進數位」且後續含有「A1」的名稱。</td>
+                            </tr>
+                            <tr>
+                                <td><code class="text-danger">工作坊[（(]一[）)]</code></td>
+                                <td>相容全/半形括號的「工作坊（一）」。</td>
+                            </tr>
+                            <tr>
+                                <td><code class="text-danger">生成式AI.*教育應用</code></td>
+                                <td>識別名稱含「生成式AI」與「教育應用」者。</td>
+                            </tr>
+                            <tr>
+                                <td><code class="text-danger">[^a-zA-Z0-9]C$</code></td>
+                                <td>精準匹配結尾為單獨字母 C 的課程（防誤判）。</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="tagModal" data-bs-backdrop="static" data-bs-focus="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold text-dark" id="modalTitle">自訂政策指標關鍵字</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="tagRuleForm" onsubmit="submitTagRule(event)">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-secondary">指標代碼 / 標籤名稱 <span class="text-danger">*</span></label>
+                        <input type="text" id="modal_tag_name" name="tag_name" class="form-control form-control-sm" placeholder="例如：A1、B5-1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-secondary d-flex justify-content-between align-items-center">
+                            <span>關鍵字識別規則庫 (Regex) <span class="text-danger">*</span></span>
+                            <button type="button" class="btn btn-xs btn-outline-success py-0 px-1" onclick="addPatternInput('')">
+                                <i class="bi bi-plus"></i> 增加欄位
+                            </button>
+                        </label>
+                        <div id="patternsContainer"></div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-sm btn-primary">儲存規則</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let tagModalEntity = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof bootstrap !== 'undefined') {
+        tagModalEntity = new bootstrap.Modal(document.getElementById('tagModal'));
+    }
+
+    document.querySelectorAll('.btn-edit-tag').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const tag = this.getAttribute('data-tag');
+            const patterns = JSON.parse(this.getAttribute('data-patterns'));
+            openEditTag(tag, patterns);
+        });
+    });
+});
+
+function openAddTagModal() {
+    document.getElementById('modalTitle').innerHTML = '<i class="bi bi-plus-circle-fill text-primary me-2"></i>建立精進數位政策指標';
+    document.getElementById('modal_tag_name').value = '';
+    document.getElementById('modal_tag_name').readOnly = false;
+    document.getElementById('patternsContainer').innerHTML = '';
+    addPatternInput(''); 
+    if (tagModalEntity) tagModalEntity.show();
+}
+
+function addPatternInput(value = '') {
+    const container = document.getElementById('patternsContainer');
+    const div = document.createElement('div');
+    div.className = 'input-group input-group-sm mb-2 pattern-item';
+    div.innerHTML = `
+        <span class="input-group-text bg-light"><i class="bi bi-regex"></i></span>
+        <input type="text" name="patterns[]" class="form-control" placeholder="輸入關鍵字或 Regex" value="${value}" required>
+        <button type="button" class="btn btn-outline-danger" onclick="this.parentElement.remove()"><i class="bi bi-dash"></i></button>
+    `;
+    container.appendChild(div);
+}
+
+function openEditTag(tag, patterns) {
+    document.getElementById('modalTitle').innerHTML = '<i class="bi bi-pencil-square text-warning me-2"></i>修改指標關鍵字規則';
+    document.getElementById('modal_tag_name').value = tag;
+    document.getElementById('modal_tag_name').readOnly = true; 
+    const container = document.getElementById('patternsContainer');
+    container.innerHTML = '';
+    patterns.forEach(p => addPatternInput(p));
+    if (tagModalEntity) tagModalEntity.show();
+}
+
+function submitTagRule(e) {
+    e.preventDefault();
+    const form = document.getElementById('tagRuleForm');
+    const formData = new FormData(form);
+    fetch('/api/tags/save', { method: 'POST', body: formData })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) alert('❌ 失敗：' + data.error);
+        else {
+            if (tagModalEntity) tagModalEntity.hide();
+            alert('✅ ' + data.message);
+            window.location.reload();
+        }
+    });
+}
+
+function deleteTagRule(tag) {
+    if (!confirm(`⚠️ 刪除【${tag}】規則將影響 15,829 筆數據之通過率統計，確定移除？`)) return;
+    fetch(`/api/tags/delete/${tag}`, { method: 'POST' })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) alert('❌ 刪除失敗');
+        else {
+            document.getElementById(`tag-row-${tag}`).remove();
+            alert('🗑️ 規則已移除');
+        }
+    });
+}
+</script>
+{% endblock %}

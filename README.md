@@ -1,70 +1,45 @@
 # 教師研習檢核與統計管理系統 (TTVS)
 > **Teacher Training Verification System**
 
-本系統是一套以 Python 3.12 + Flask + SQLite 為核心的教師研習管理與行政檢核系統。旨在協助學校行政人員高效匯入海量教師研習紀錄（如單次上萬筆的 CSV 檔案），自動過濾特定政策指標（如「精進數位學習」與「數位學習工作坊」），並依據預設名冊的原始行政順序，快速產出符合主管機關送件審查用的統計報表，預期可降低 80% 以上的人工整理工作量。
+![Python Version](https://img.shields.io/badge/python-3.12.13-blue)
+![Framework](https://img.shields.io/badge/framework-Flask_3.x-green)
+![Environment](https://img.shields.io/badge/env-uv--managed-purple)
 
----
+本系統專為國小端「推動中小學數位學習精進方案」行政審查量身打造。針對全國教師在職進修網匯出高達 15,829 筆的巨量大數據，提供**智慧型模糊標籤清洗**、**全校達成率動態儀表板**、**未通過人員精準催辦追蹤**，並可一鍵導出符合局端送件規範的**雙欄審查 CSV**、**正式簽呈公文 docx** 檔案。
 
-## 📌 核心功能
-- **教師資料管理**：支援全校教師基本資料與行政職位排序的管理。
-- **研習資料匯入**：支援大量研習 CSV/Excel 檔案非同步或批量匯入。
-- **自動標籤檢核**：精準識別「精進數位」或「數位學習工作坊」相關課程，並自動歸類至 `A1`、`A2`、`A3`、`B1`~`B5-2`、`C`、`D`、`E` 等政策指標。
-- **時數狀態判定**：依「課程代碼」辨識唯一課程，若實核時數大於 0 則判定為「通過」，時數為 0 則判定為「未通過」。
-- **統計分析與報表**：自動計算各指標通過率，並可一鍵導出符合雙欄 Excel 樣板的 CSV 行政審查報表與正式公文明細。
+## 🚀 系統亮點
+1. **動態指標自訂 (對齊教育部標準)**：整合教育部 113-116 年師資培訓架構，支援自訂 Regex 規則（如：`精進數位.*A1`、`工作坊[（(]一[）)]`），未來指標擴充免修程式碼。
+2. **智慧催辦連動**：在 3.6 統計分析頁面中，大於 1 人以上未通過之指標會以「紅色粗底線」醒目提示，點擊可**非同步 (AJAX) 彈出未通過教師名單**，方便行政精準催辦。
+3. **無障礙狀態優化**：前端 Modal 對話視窗全面解鎖無障礙對焦鎖（Focus Trapping），大幅提升前台操作流暢度。
 
----
 
-## 🛠️ 技術架構
-- **前端 (Frontend)**：HTML5 / CSS3 / Bootstrap 5 / JavaScript / Jinja2 樣板引擎
-- **後端 (Backend)**：Python 3.12 / Flask 網頁微框架
-- **資料庫 (Database)**：SQLite (搭配 SQLAlchemy ORM)
-- **資料處理與報表**：Pandas (大數據高效清洗) / openpyxl / python-docx
-
----
-
-## 📂 專案目錄結構
-
-teacher_training_system/
-│
-├─ main.py                      # 系統主程式進入點與 Flask 路由（整合研習匯入、檢核、報表下載）
-├─ config.py                    # 系統全域設定檔（資料庫路徑、上傳目錄、金鑰等）
-├─ models.py                    # 資料庫模型定義（教師、研習課程、研習紀錄、標籤等資料表）
-├─ database.db                  # SQLite 資料庫檔案（由系統自動生成）
-├─ requirements.txt             # 專案套件相依清單（Flask, SQLAlchemy, Pandas, openpyxl 等）
-│
-├─ uploads/                     # 研習紀錄原始檔案（Excel/CSV）上傳暫存目錄
-├─ exports/                     # 系統導出的 Excel/CSV 暫存目錄
-├─ reports/                     # 產出的正式公文、Word、PDF 報表目錄
-├─ backups/                     # 資料庫定期備份目錄
-│
-├─ services/                    # 核心業務邏輯處理層（Services）
-│   ├─ import_service.py        # 處理 Excel / CSV / Word 資料解析與清洗
-│   ├─ export_service.py        # 處理各式資料與統計表的匯出作業
-│   ├─ statistics_service.py    # 負責計算全校人數、通過率與完成率之統計邏輯
-│   ├─ tag_service.py           # 負責解析「精進數位」或「數位學習工作坊」與 A1~E 標籤
-│   └─ report_service.py        # 負責將數據帶入 Word/PDF 樣板的報表生成服務
-│
-├─ routes/                      # 模組化路由控制層（Blueprints，供 main.py 引用）
-│   ├─ teacher_routes.py        # 教師名冊增刪查改（CRUD）之網頁路由
-│   ├─ training_routes.py       # 研習課程與查詢頁面之網頁路由
-│   ├─ import_routes.py         # 處理檔案上傳與非同步檢核之網頁路由
-│   └─ report_routes.py         # 統計分析圖表與報表下載之網頁路由
-│
-├─ templates/                   # 前端 Jinja2 網頁樣板（HTML）
-│   ├─ base.html                # 全站通用導覽列與側邊欄基礎樣板
-│   ├─ dashboard.html           # 系統首頁儀表板（顯示全校教師總數、完成率與統計圖表）
-│   ├─ teachers.html            # 教師管理與名冊匯入/修改頁面
-│   ├─ trainings.html           # 研習課程列表與個別教師查詢頁面
-│   ├─ import.html              # 研習資料拖曳上傳與即時檢核狀態頁面
-│   ├─ statistics.html          # 標籤通過人數、未通過人數與通過率分析頁面
-│   └─ reports.html             # 全校研習統計表（雙欄格式）匯出與公文下載頁面
-│
-├─ static/                      # 前端靜態資源檔案
-│   ├─ css/                     # 自訂樣式與 Bootstrap 5 樣式表
-│   ├─ js/                      # 前端互動邏輯（如上傳進度條、圖表渲染）
-│   └─ images/                  # 系統標誌與圖示資源
-│
-└─ migrations/                  # 資料庫版控目錄（選用）
+## 📁 專案目錄結構
+```text
+ttvs_project/
+├── .venv/                  # uv 託管之 Python 3.12 虛擬環境
+├── instance/
+│   └── dynamic_tag_rules.json # 政策指標關鍵字持久化規則庫 (自動生成)
+├── models.py               # SQLAlchemy ORM 資料庫模型 (Teacher, Training 等)
+├── config.py               # 系統全域參數設定檔 (資料夾路徑、密鑰等)
+├── main.py                 # 應用程式啟動核心進入點
+├── services/               # 核心行政邏輯與數據處理層
+│   ├── tag_service.py      # 智慧標籤 Regex 比對與註冊服務
+│   ├── statistics_service.py # 全校研習大數據計算服務
+│   ├── report_service.py   # 指標達成率計算與分析服務
+│   └── export_service.py   # 雙欄 CSV / Word / Excel 檔案輸出服務
+├── routes/                 # 業務模組化藍圖路由層
+│   ├── teacher_routes.py   # 3.1 教師基本名冊管理
+│   ├── import_routes.py    # 3.2 研習檔案批量匯入
+│   ├── training_routes.py  # 3.5 研習綜合查詢與時數更正
+│   ├── report_routes.py    # 3.6 & 3.7 統計報表與發文匯出
+│   └── tag_routes.py       # 關鍵字自訂管理網頁 API
+├── templates/              # 前端美化行政樣板 (Bootstrap 5)
+│   ├── base.html           # 全站通用導覽列基底
+│   ├── dashboard.html      # 系統首頁大數據儀表板
+│   ├── teachers.html       # 教師資料管理頁面
+│   ├── statistics.html     # 政策指標統計與催辦一覽表
+│   └── tag_settings.html   # 政策指標與關鍵字動態自訂面版
+└── requirements.txt        # 系統套件依賴清單
 
 
 🚀 快速開始
