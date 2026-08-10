@@ -1,222 +1,247 @@
 {% extends 'base.html' %}
 
-{% block title %}研習指標統計分析 - 教師研習檢核與統計管理系統 (TTVS){% endblock %}
-
-{% block page_title %}
-<i class="bi bi-graph-up-arrow text-primary me-2"></i>3.6 政策指標統計與分析功能
-{% endblock %}
+{% block title %}3.6 研習統計分析 - {{ system_name }}{% endblock %}
 
 {% block content %}
-{% if error %}
-<div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
-    <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error }}
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-</div>
-{% endif %}
+<div class="container-fluid py-4">
 
-<div class="card shadow-sm border-0 bg-white mb-4">
-    <div class="card-body p-4 d-flex flex-wrap justify-content-between align-items-center gap-3">
+    <!-- 頁面頂部標題與總人數統計 -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-2 border-bottom">
         <div>
-            <h5 class="fw-bold text-dark mb-1"><i class="bi bi-printer me-2"></i>教育局送件審查報表導出</h5>
-            <p class="text-muted small mb-0">系統已依據全校編制教師總數，自動完成各項政策標籤的修課率大數據計算，您可直接點選右側按鈕下載發文附件。</p>
+            <h2 class="h3 font-weight-bold text-gray-800 mb-1">
+                <i class="bi bi-pie-chart-fill text-primary me-2"></i> 3.6 研習統計分析
+            </h2>
+            <p class="text-muted small mb-0">深入分析教務處 (AA)、輔導室 (SP)、學務處 (SA)、總務處 (GA) 各項指標研習達成狀況，點擊人數可查看教師名冊明細</p>
         </div>
-        <div class="d-flex gap-2">
-            <a href="/export/tag_analysis_report" class="btn btn-sm btn-outline-primary">
-                <i class="bi bi-file-earmark-word text-primary me-1"></i>下載分析報告 (.docx)
-            </a>
-            <a href="/export/all_school_excel" class="btn btn-sm btn-success">
-                <i class="bi bi-file-earmark-excel me-1"></i>匯出全校明細總表 (.xlsx)
-            </a>
+        <div class="mt-2 mt-md-0">
+            <span class="badge bg-primary fs-6 px-3 py-2 shadow-sm">
+                <i class="bi bi-people-fill me-1"></i> 全校編制教師總數：<strong>{{ total_teachers }}</strong> 人
+            </span>
         </div>
     </div>
-</div>
 
-<div class="card shadow-sm border-0 bg-white">
-    <div class="card-header bg-transparent border-0 pt-4 px-4">
-        <h5 class="fw-bold mb-0 text-secondary"><i class="bi bi-table me-2"></i>數位學習各類別達成率一覽表</h5>
-    </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover table-admin table-striped align-middle mb-0">
-                <thead>
-                    <tr>
-                        <th style="width: 10%;">序號</th>
-                        <th style="width: 25%;">研習類別 (政策指標項目)</th>
-                        <th style="width: 15%;">合格已通過人數</th>
-                        <th style="width: 15%;">尚待補修人數</th>
-                        <th style="width: 35%;">全校達成率進度條 (通過率公式計算)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for row in stats %}
-                    <tr>
-                        <td class="text-center fw-bold text-muted">{{ loop.index }}</td>
-                        
-                        <td class="px-4 fw-bold text-secondary">
-                            <span class="tag-indicator px-2 py-1 bg-primary bg-opacity-10 text-primary border-primary border-opacity-25">{{ row.研習類別 }}</span>
-                            <small class="text-muted ms-2">
-                                {% if row.研習類別 == 'A1' %}數位學習工作坊(一)
-                                {% elif row.研習類別 == 'A2' %}數位學習工作坊(二)
-                                {% elif row.研習類別 == 'A3' %}數位素養進階研習
-                                {% elif row.研習類別 == 'B1' %}智慧學習課堂教學應用
-                                {% elif row.研習類別 == 'B5-1' %}生成式AI與教育應用
-                                {% elif row.研習類別 == 'B5-2' %}生成式AI融入學科教學
-                                {% else %}跨領域前瞻數位增能指標
-                                {% endif %}
-                            </small>
-                        </td>
-                        
-                        <td class="text-center text-success fw-bold fs-5">{{ row.通過人數 }} <span class="fs-6 fw-normal text-muted">人</span></td>
-                        
-                        <td class="text-center">
-                            {% if row.未通過人數 and row.未通過人數|int > 0 %}
-                                <a href="javascript:void(0);" 
-                                   class="text-danger fw-bold fs-5 text-decoration-none pending-link"
-                                   onclick="showPendingTeachers('{{ row.研習類別 }}')"
-                                   title="點擊查看未通過教師名單">
-                                    {{ row.未通過人數 }} <span class="fs-6 fw-bold text-danger">人</span>
-                                </a>
-                            {% else %}
-                                <span class="badge bg-success-subtle text-success border border-success-subtle py-1 px-2 fw-semibold" style="font-size: 0.8rem;">0 人 (全員通關)</span>
-                            {% endif %}
-                        </td>
-                        
-                        <td class="px-4">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <small class="text-muted fw-semibold">全校達成指標比例</small>
-                                <span class="fw-bold text-primary" style="font-size: 0.9rem;">{{ row.通過率 }}</span>
-                            </div>
-                            <div class="progress progress-admin" style="height: 12px; border-radius: 6px;">
-                                <div class="progress-bar {% if '100' in row.通過率 or '9' in row.通過率 %}bg-success{% elif '8' in row.通過率 or '7' in row.通過率 %}bg-primary{% else %}bg-warning{% endif %}" 
-                                     role="progressbar" 
-                                     style="width: {{ row.通過率 }};">
+    <!-- Flash 訊息提示 -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm mb-4" role="alert">
+             <i class="bi bi-info-circle-fill me-2"></i> {{ message }}
+             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- ========================================================================= -->
+    <!-- 🏢 各處室分頁 / 區塊圖表化呈現 -->
+    <!-- ========================================================================= -->
+    <div class="row g-4">
+        {% for dept_name, tags in dept_groups.items() %}
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+                <div class="card-header bg-dark text-white fw-bold py-3">
+                    <i class="bi bi-building me-2 text-warning"></i> {{ dept_name }} - 政策研習指標深度分析 (共有 {{ tags|length }} 項指標)
+                </div>
+                <div class="card-body p-4 bg-light">
+                    <div class="row g-3">
+                        {% for tag in tags %}
+                        {% set stat = tag_stats.get(tag, {'count': 0, 'pending_count': 0, 'percentage': 0.0, 'completed_teachers': [], 'pending_teachers': []}) %}
+                        {% set display_title = tag_display_names.get(tag, tag) if tag_display_names else tag %}
+
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card border-0 shadow-sm rounded-3 h-100">
+                                <div class="card-body p-3">
+                                    <!-- 1. 指標標號與第二行中文名稱 -->
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="fw-bold text-dark fs-6" title="{{ display_title }}">
+                                            <i class="bi bi-hash text-warning"></i> 指標 {{ tag }}
+                                            <small class="text-primary fw-normal">({{ display_title }})</small>
+                                        </span>
+                                        <span class="badge bg-secondary">{{ stat.percentage }}%</span>
+                                    </div>
+
+                                    <!-- 2. 指標進度條 -->
+                                    <div class="progress my-2" style="height: 10px;">
+                                        <div class="progress-bar {% if stat.percentage >= 80 %}bg-success{% elif stat.percentage >= 50 %}bg-info{% else %}bg-warning{% endif %}" 
+                                             role="progressbar" 
+                                             style="width: {{ stat.percentage }}%;" 
+                                             aria-valuenow="{{ stat.percentage }}" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="100">
+                                        </div>
+                                    </div>
+
+                                    <!-- 3. 已完成與未完成人數（點擊穿透連結，0 人自動取消連結） -->
+                                    <div class="d-flex justify-content-between align-items-center pt-2 border-top small">
+                                        <!-- 已完成研習人數 -->
+                                        <div>
+                                            <span class="text-muted">已完成：</span>
+                                            {% if stat.count > 0 %}
+                                                <a href="javascript:void(0)" class="fw-bold text-success text-decoration-underline" onclick="showTeacherList('{{ tag }}', '{{ display_title }}', 'completed')">
+                                                    {{ stat.count }} 人
+                                                </a>
+                                            {% else %}
+                                                <span class="fw-bold text-secondary">0 人</span>
+                                            {% endif %}
+                                        </div>
+
+                                        <!-- 未完成研習人數 (紅色加底線數字) -->
+                                        <div>
+                                            <span class="text-muted">未完成：</span>
+                                            {% if stat.pending_count > 0 %}
+                                                <a href="javascript:void(0)" class="fw-bold text-danger text-decoration-underline" onclick="showTeacherList('{{ tag }}', '{{ display_title }}', 'pending')">
+                                                    {{ stat.pending_count }} 人
+                                                </a>
+                                            {% else %}
+                                                <span class="fw-bold text-secondary">0 人</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
                                 </div>
                             </div>
-                        </td>
-                    </tr>
-                    {% else %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+<!-- 📋 教師名冊明細對話框 Modal -->
+<div class="modal fade" id="teacherListModal" tabindex="-1" aria-labelledby="teacherListModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header text-white" id="modalHeader">
+        <h5 class="modal-title fw-bold" id="teacherListModalLabel">
+            <i class="bi bi-people-fill me-2"></i> 教師名冊明細
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      
+      <div class="modal-body p-0">
+        <!-- 💡 工具列：新增「複製到剪貼簿」按鈕 -->
+        <div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center">
+            <span class="text-muted small">
+                <i class="bi bi-info-circle me-1"></i> 可直接複製名單並貼上至 Excel 或 Word
+            </span>
+            <button type="button" class="btn btn-sm btn-outline-dark fw-bold shadow-sm" id="btnCopyTeacherList" onclick="copyTeacherListToClipboard()">
+                <i class="bi bi-clipboard-plus me-1"></i> 複製名單 (流水號/處室/姓名)
+            </button>
+        </div>
+
+        <div class="table-responsive" style="max-height: 400px;">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light sticky-top">
                     <tr>
-                        <td colspan="5" class="text-center py-5 text-muted">
-                            <i class="bi bi-bar-chart-line fs-1 d-block mb-2"></i>系統中尚無研習資料可供進行大數據標籤統計。
-                        </td>
+                        <th class="ps-3" style="width: 80px;">序號</th>
+                        <th style="width: 200px;">處室職稱</th>
+                        <th>教師姓名</th>
+                        <th style="width: 150px;">虛擬編號</th>
                     </tr>
-                    {% endfor %}
+                </thead>
+                <tbody id="teacherListTableBody">
+                    <!-- JavaScript 動態渲染教師資料 -->
                 </tbody>
             </table>
         </div>
+      </div>
+      
+      <div class="modal-footer bg-light py-2">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">關閉視窗</button>
+      </div>
     </div>
+  </div>
 </div>
 
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="alert alert-light border shadow-sm p-4 mb-0">
-            <h6 class="fw-bold text-dark mb-2"><i class="bi bi-calculator text-primary me-2"></i>行政審查數據計算備忘錄</h6>
-            <ul class="text-muted small mb-0 ps-3">
-                <li class="mb-1"><strong>通過率計算公式：</strong> 通過人數 ÷ 全校教師總人數 × 100%。</li>
-                <li class="mb-1"><strong>💡 智慧追蹤：</strong> 您可以直接點擊表格中帶有<strong>紅色粗底線</strong>的數字，系統將會即時為您篩選出該項指標尚未過關的教師名單，方便列印與行政催辦。若顯示為 0 人則代表該指標已全數達標。</li>
-            </ul>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="pendingTeachersModal" data-bs-focus="false" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-md">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-danger bg-opacity-10">
-                <h5 class="modal-title fw-bold text-danger" id="pendingModalTitle">
-                    <i class="bi bi-person-x-fill me-2"></i>尚待補修教師名冊
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-0" style="max-height: 400px; overflow-y: auto;">
-                <div id="pendingLoading" class="text-center py-4">
-                    <div class="spinner-border spinner-border-sm text-secondary me-2" role="status"></div>
-                    <span class="text-muted small">正在智慧檢索全校名冊，請稍候...</span>
-                </div>
-                <table class="table table-sm table-hover align-middle mb-0 d-none" id="pendingTable">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="ps-3" style="width: 15%;">序號</th>
-                            <th style="width: 50%;">行政職位 / 班級</th>
-                            <th style="width: 35%;">教師姓名</th>
-                        </tr>
-                    </thead>
-                    <tbody id="pendingListContainer">
-                        </tbody>
-                </table>
-            </div>
-            <div class="modal-footer bg-light py-2">
-                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">關閉視窗</button>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
-
-{% block extra_js %}
+<!-- JavaScript 邏輯：處理名冊彈出、點擊切換與複製剪貼簿 -->
 <script>
-let pendingModalEntity = null;
+// 後端注入全站指標名冊資料 JSON
+const tagStatsData = {{ tag_stats | tojson }};
+let currentActiveTeacherList = []; // 快取當前彈出的名單
 
-document.addEventListener('DOMContentLoaded', function() {
-    if (typeof bootstrap !== 'undefined') {
-        pendingModalEntity = new bootstrap.Modal(document.getElementById('pendingTeachersModal'));
+function showTeacherList(tagCode, displayTitle, type) {
+    const tagInfo = tagStatsData[tagCode];
+    if (!tagInfo) return;
+
+    const isCompleted = (type === 'completed');
+    currentActiveTeacherList = isCompleted ? tagInfo.completed_teachers : tagInfo.pending_teachers;
+
+    if (!currentActiveTeacherList || currentActiveTeacherList.length === 0) return;
+
+    const header = document.getElementById('modalHeader');
+    const title = document.getElementById('teacherListModalLabel');
+    const copyBtn = document.getElementById('btnCopyTeacherList');
+    
+    // 重設複製按鈕狀態
+    if (copyBtn) {
+        copyBtn.className = "btn btn-sm btn-outline-dark fw-bold shadow-sm";
+        copyBtn.innerHTML = `<i class="bi bi-clipboard-plus me-1"></i> 複製名單 (流水號/處室/姓名)`;
     }
-});
+
+    if (isCompleted) {
+        header.className = 'modal-header bg-success text-white';
+        title.innerHTML = `<i class="bi bi-check-circle-fill me-2"></i> 指標【${tagCode} ${displayTitle}】已完成研習教師名單 (${currentActiveTeacherList.length} 人)`;
+    } else {
+        header.className = 'modal-header bg-danger text-white';
+        title.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-2"></i> 指標【${tagCode} ${displayTitle}】未完成研習教師名單 (${currentActiveTeacherList.length} 人)`;
+    }
+
+    const tbody = document.getElementById('teacherListTableBody');
+    tbody.innerHTML = '';
+
+    currentActiveTeacherList.forEach((t, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="ps-3 text-muted small">${idx + 1}</td>
+            <td class="fw-bold text-secondary">${t.position}</td>
+            <td class="fw-bold text-primary fs-6">${t.name}</td>
+            <td><code>${t.code}</code></td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    const modalEl = document.getElementById('teacherListModal');
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+}
 
 /**
- * 非同步撈取並顯示尚未補修的教師名單
+ * 💡 核心新增：將當前名單複製到剪貼簿 (包含：流水號、處室職稱、教師姓名)
  */
-function showPendingTeachers(tag) {
-    const loading = document.getElementById('pendingLoading');
-    const table = document.getElementById('pendingTable');
-    const container = document.getElementById('pendingListContainer');
-    const title = document.getElementById('pendingModalTitle');
-    
-    title.innerHTML = `<i class="bi bi-person-x-fill me-2"></i>指標【${tag}】尚待補修教師名冊`;
-    loading.classList.remove('d-none');
-    table.classList.add('d-none');
-    container.innerHTML = '';
-    
-    if (pendingModalEntity) pendingModalEntity.show();
-    
-    fetch(`/api/reports/pending_teachers/${tag}`)
-        .then(res => res.json())
-        .then(data => {
-            loading.classList.add('d-none');
-            table.classList.remove('d-none');
+function copyTeacherListToClipboard() {
+    if (!currentActiveTeacherList || currentActiveTeacherList.length === 0) {
+        alert("目前沒有可複製的名單！");
+        return;
+    }
+
+    // 建立表頭
+    let textToCopy = "流水號\t處室職稱\t教師姓名\n";
+
+    // 組合每筆資料（以 Tab \t 分隔，直接貼進 Excel 會分成三個獨立欄位）
+    currentActiveTeacherList.forEach((t, idx) => {
+        textToCopy += `${idx + 1}\t${t.position}\t${t.name}\n`;
+    });
+
+    // 使用 Clipboard API 進行複製
+    navigator.clipboard.writeText(textToCopy).then(() => {
+        const copyBtn = document.getElementById('btnCopyTeacherList');
+        if (copyBtn) {
+            copyBtn.className = "btn btn-sm btn-success fw-bold shadow-sm";
+            copyBtn.innerHTML = `<i class="bi bi-check-lg me-1"></i> 已成功複製 ${currentActiveTeacherList.length} 筆名單！`;
             
-            if (data.pending_teachers && data.pending_teachers.length > 0) {
-                data.pending_teachers.forEach((teacher, idx) => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td class="ps-3 text-muted fw-bold">${idx + 1}</td>
-                        <td><span class="badge bg-light text-secondary border">${teacher.position}</span></td>
-                        <td class="fw-bold text-dark">${teacher.name}</td>
-                    `;
-                    container.appendChild(row);
-                });
-            } else {
-                container.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-success fw-bold"><i class="bi bi-check-circle-fill me-1"></i>太棒了！全校編制內教師已全員通過此指標！</td></tr>`;
-            }
-        })
-        .catch(err => {
-            loading.classList.add('d-none');
-            container.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-danger">❌ 無法撈取名單: ${err.message}</td></tr>`;
-        });
+            // 2 秒後恢復按鈕原狀
+            setTimeout(() => {
+                copyBtn.className = "btn btn-sm btn-outline-dark fw-bold shadow-sm";
+                copyBtn.innerHTML = `<i class="bi bi-clipboard-plus me-1"></i> 複製名單 (流水號/處室/姓名)`;
+            }, 2000);
+        }
+    }).catch(err => {
+        alert("複製失敗，請手動選取文字複製: " + err);
+    });
 }
 </script>
-
-<style>
-    .pending-link {
-        border-bottom: 3px solid #dc3545 !important; /* 顯眼的紅色粗底線 */
-        padding-bottom: 2px;
-        display: inline-block;
-        transition: all 0.15s ease-in-out;
-    }
-    .pending-link:hover {
-        color: #bd2130 !important; /* 深紅色懸停 */
-        border-bottom-color: #bd2130 !important;
-        transform: scale(1.08); /* 微微放大引導點擊 */
-    }
-</style>
 {% endblock %}

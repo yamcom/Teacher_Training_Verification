@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}管理員與帳號權限管理 - {{ system_name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- 頁面標題與新增按鈕 -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="h3 font-weight-bold text-gray-800 mb-1">
+                <i class="bi bi-people-fill text-primary"></i> 系統帳號與權限管理
+            </h2>
+            <p class="text-muted small mb-0">管理全校各處室研習承辦人帳號、密碼重置與系統管理員權限</p>
+        </div>
+        <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addUserModal">
+            <i class="bi bi-person-plus-fill me-1"></i> 新增承辦人/管理員帳號
+        </button>
+    </div>
+
+    <!-- Flash 訊息 -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm mb-4" role="alert">
+             <i class="bi bi-info-circle-fill me-2"></i> {{ message }}
+             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- 👥 帳號資料表格 -->
+    <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3" style="width: 80px;">ID</th>
+                            <th style="width: 150px;">登入帳號</th>
+                            <th style="width: 150px;">真實姓名</th>
+                            <th style="width: 150px;">所屬處室</th>
+                            <th style="width: 130px;">權限角色</th>
+                            <th>最後登入時間</th>
+                            <th class="text-end pe-3" style="width: 200px;">管理操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in users %}
+                        <tr>
+                            <td class="ps-3 text-secondary small">#{{ u.id }}</td>
+                            <td class="fw-bold text-dark">
+                                <i class="bi bi-person-badge text-primary me-1"></i>{{ u.username }}
+                            </td>
+                            <td>{{ u.real_name }}</td>
+                            <td><span class="badge bg-light text-dark border">{{ u.department or '未指定' }}</span></td>
+                            <td>
+                                {% if u.role == 'admin' %}
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle fw-bold">
+                                        <i class="bi bi-shield-lock-fill me-1"></i>系統管理員
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-bold">
+                                        <i class="bi bi-person-check-fill me-1"></i>處室承辦人
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="text-muted small">
+                                {{ u.last_login.strftime('%Y-%m-%d %H:%M') if u.last_login else '尚未登入' }}
+                            </td>
+                            <td class="text-end pe-3">
+                                <div class="btn-group btn-group-sm">
+                                    <!-- 重置密碼按鈕 -->
+                                    <button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#resetPasswordModal-{{ u.id }}" title="重置此帳號密碼">
+                                        <i class="bi bi-key-fill"></i> 重置密碼
+                                    </button>
+                                    
+                                    <!-- 刪除帳號按鈕 (禁止刪除自己) -->
+                                    {% if u.id != current_user.id %}
+                                    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteUserModal-{{ u.id }}" title="刪除此帳號">
+                                        <i class="bi bi-trash3-fill"></i> 刪除
+                                    </button>
+                                    {% else %}
+                                    <button type="button" class="btn btn-outline-secondary" disabled title="無法刪除目前登入之帳號">
+                                        目前的帳號
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Modal 1: 重置密碼對話框 -->
+                        <div class="modal fade" id="resetPasswordModal-{{ u.id }}" tabindex="-1" aria-hidden="true">
+                          <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content border-0 shadow">
+                              <div class="modal-header bg-warning text-dark">
+                                <h5 class="modal-title font-weight-bold"><i class="bi bi-key-fill me-1"></i> 重置密碼：{{ u.username }} ({{ u.real_name }})</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                              </div>
+                              <form action="{{ url_for('auth.admin_reset_password', user_id=u.id) }}" method="POST">
+                                  <div class="modal-body p-4">
+                                    <div class="mb-3">
+                                        <label for="new_password_{{ u.id }}" class="form-label font-weight-bold">請輸入新的密碼 (至少6碼)：</label>
+                                        <input type="password" class="form-control" id="new_password_{{ u.id }}" name="new_password" placeholder="新密碼" required minlength="6">
+                                    </div>
+                                  </div>
+                                  <div class="modal-footer bg-light">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                    <button type="submit" class="btn btn-warning font-weight-bold">確認變更密碼</button>
+                                  </div>
+                              </form>
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Modal 2: 刪除帳號確認對話框 -->
+                        {% if u.id != current_user.id %}
+                        <div class="modal fade" id="deleteUserModal-{{ u.id }}" tabindex="-1" aria-hidden="true">
+                          <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content border-danger">
+                              <div class="modal-header bg-danger text-white">
+                                <h5 class="modal-title font-weight-bold"><i class="bi bi-exclamation-triangle-fill me-1"></i> 確認刪除帳號</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                              </div>
+                              <div class="modal-body p-4">
+                                <p class="mb-0">確定要刪除帳號 <strong class="text-danger">{{ u.username }} ({{ u.real_name }})</strong> 嗎？此操作將取消該帳號之所有審核存取權限。</p>
+                              </div>
+                              <div class="modal-footer bg-light">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                <form action="{{ url_for('auth.delete_user', user_id=u.id) }}" method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-danger">確定刪除帳號</button>
+                                </form>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        {% endif %}
+
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ➕ 新增帳號 Modal 對話框 -->
+<div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title font-weight-bold" id="addUserModalLabel">
+            <i class="bi bi-person-plus-fill me-2"></i> 新增使用者 / 承辦人帳號
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="{{ url_for('auth.add_user') }}" method="POST">
+          <div class="modal-body p-4">
+            <div class="mb-3">
+                <label for="username" class="form-label font-weight-bold">登入帳號 (Username)</label>
+                <input type="text" class="form-control" id="username" name="username" placeholder="例：academic_01" required>
+            </div>
+            <div class="mb-3">
+                <label for="password" class="form-label font-weight-bold">預設登入密碼</label>
+                <input type="password" class="form-control" id="password" name="password" placeholder="請輸入密碼 (至少6碼)" required minlength="6">
+            </div>
+            <div class="mb-3">
+                <label for="real_name" class="form-label font-weight-bold">使用者真實姓名 / 職稱</label>
+                <input type="text" class="form-control" id="real_name" name="real_name" placeholder="例：張組長" required>
+            </div>
+            <div class="mb-3">
+                <label for="department" class="form-label font-weight-bold">所屬處室</label>
+                <select class="form-select" id="department" name="department">
+                    <option value="教務處">教務處</option>
+                    <option value="學務處">學務處</option>
+                    <option value="輔導室">輔導室</option>
+                    <option value="總務處">總務處</option>
+                    <option value="全校性/管理者">全校性/管理者</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="role" class="form-label font-weight-bold">權限角色</label>
+                <select class="form-select" id="role" name="role">
+                    <option value="reviewer">處室承辦人 (Reviewer) - 僅能審核與勾選研習</option>
+                    <option value="admin">系統管理員 (Admin) - 可管理帳號與全站重置</option>
+                </select>
+            </div>
+          </div>
+          <div class="modal-footer bg-light">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+            <button type="submit" class="btn btn-primary font-weight-bold">確認建立帳號</button>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

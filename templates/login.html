@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}承辦人身份驗證 - {{ system_name }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center align-items-center style="min-height: 70vh;">
+        <div class="col-md-6 col-lg-5">
+            <!-- 登入卡片主體 -->
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <!-- 卡片頂部 Banner -->
+                <div class="card-header bg-primary text-white text-center py-4 border-0">
+                    <div class="mb-2">
+                        <i class="bi bi-shield-lock-fill fs-1"></i>
+                    </div>
+                    <h4 class="fw-bold mb-1">承辦人身份驗證</h4>
+                    <p class="small mb-0 text-white-50">請輸入管理者或處室承辦人帳號以進行存取</p>
+                </div>
+
+                <div class="card-body p-4 p-md-5 bg-white">
+                    <!-- Flash 訊息提示區域 (顯示密碼錯誤、未登入警告等) -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                      {% if messages %}
+                        {% for category, message in messages %}
+                          <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm mb-4" role="alert">
+                             <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ message }}
+                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                          </div>
+                        {% endfor %}
+                      {% endif %}
+                    {% endwith %}
+
+                    <!-- 登入表單 -->
+                    <form action="{{ url_for('auth.login', next=request.args.get('next')) }}" method="POST">
+                        <!-- 帳號輸入欄位 -->
+                        <div class="mb-3">
+                            <label for="username" class="form-label fw-bold text-secondary">
+                                <i class="bi bi-person-fill me-1"></i> 承辦人帳號 (Username)
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-person"></i></span>
+                                <input type="text" class="form-control bg-light border-start-0" id="username" name="username" placeholder="請輸入帳號 (預設: admin)" required autofocus>
+                            </div>
+                        </div>
+
+                        <!-- 密碼輸入欄位 -->
+                        <div class="mb-4">
+                            <label for="password" class="form-label fw-bold text-secondary">
+                                <i class="bi bi-key-fill me-1"></i> 登入密碼 (Password)
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-lock"></i></span>
+                                <input type="password" class="form-control bg-light border-start-0" id="password" name="password" placeholder="請輸入密碼 (預設: admin123)" required>
+                                <button class="btn btn-outline-secondary bg-light border-start-0" type="button" id="togglePasswordBtn">
+                                    <i class="bi bi-eye-slash" id="togglePasswordIcon"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 記住我選項 -->
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="remember" name="remember" value="1">
+                                <label class="form-check-label small text-muted" for="remember">
+                                    保持登入狀態 (記住我)
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 送出按鈕 -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg shadow-sm font-weight-bold">
+                                <i class="bi bi-box-arrow-in-right me-1"></i> 登入管理系統
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 卡片底部資訊 -->
+                <div class="card-footer bg-light text-center py-3 border-0">
+                    <span class="text-muted small">
+                        <i class="bi bi-info-circle me-1"></i> 初次使用請憑預設帳密 `admin` / `admin123` 登入
+                    </span>
+                </div>
+            </div>
+
+            <!-- 返回首頁連結 -->
+            <div class="text-center mt-3">
+                <a href="{{ url_for('dashboard') }}" class="text-decoration-none text-muted small">
+                    <i class="bi bi-arrow-left me-1"></i> 返回首頁儀表板 (訪客檢視模式)
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript：密碼顯示/隱藏切換 -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const togglePasswordBtn = document.getElementById('togglePasswordBtn');
+    const passwordInput = document.getElementById('password');
+    const togglePasswordIcon = document.getElementById('togglePasswordIcon');
+
+    if (togglePasswordBtn && passwordInput) {
+        togglePasswordBtn.addEventListener('click', function() {
+            const isPassword = passwordInput.getAttribute('type') === 'password';
+            passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+            
+            // 切換眼睛圖示
+            if (isPassword) {
+                togglePasswordIcon.classList.remove('bi-eye-slash');
+                togglePasswordIcon.classList.add('bi-eye');
+            } else {
+                togglePasswordIcon.classList.remove('bi-eye');
+                togglePasswordIcon.classList.add('bi-eye-slash');
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

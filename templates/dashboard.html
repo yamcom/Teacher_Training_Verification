@@ -1,167 +1,143 @@
 {% extends 'base.html' %}
 
-{% block title %}首頁儀表板 - 教師研習檢核與統計管理系統{% endblock %}
-
-{% block page_title %}
-<i class="bi bi-speedometer2 text-primary me-2"></i>全校研習推動儀表板
-{% endblock %}
+{% block title %}首頁儀表板 - {{ system_name }}{% endblock %}
 
 {% block content %}
-<div class="row g-3 mb-4">
-    <div class="col-12 col-sm-6 col-xl-4">
-        <div class="card card-counter counter-total h-100 bg-white">
-            <div class="card-body d-flex align-items-center">
-                <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
-                    <i class="bi bi-people text-primary fs-3"></i>
-                </div>
-                <div>
-                    <h6 class="card-subtitle text-muted mb-1">全校編制教師總數</h6>
-                    <h3 class="card-title fw-bold mb-0 text-dark">{{ total_teachers }} <span class="fs-6 fw-normal text-muted">人</span></h3>
-                </div>
-            </div>
+<div class="container-fluid py-4">
+
+    <!-- 頁面頂部儀表板標題與檢核基準日 -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-2 border-bottom">
+        <div>
+            <h2 class="h3 font-weight-bold text-gray-800 mb-1">
+                <i class="bi bi-speedometer2 text-primary me-2"></i> 全校教師研習指標達成率儀表板
+            </h2>
+            <p class="text-muted small mb-0">即時監控教育部政策指標與各處室研習達成統計數據</p>
+        </div>
+        <div class="mt-2 mt-md-0">
+            <span class="badge bg-light text-dark border p-2 shadow-sm">
+                <i class="bi bi-calendar-check text-success me-1"></i> 最新檢核基準日：<strong class="text-primary">{{ audit_base_date }}</strong>
+            </span>
         </div>
     </div>
 
-    <div class="col-12 col-sm-6 col-xl-4">
-        <div class="card card-counter counter-passed h-100 bg-white">
-            <div class="card-body d-flex align-items-center">
-                <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
-                    <i class="bi bi-check-circle text-success fs-3"></i>
-                </div>
-                <div>
-                    <h6 class="card-subtitle text-muted mb-1">基本指標已完成教師</h6>
-                    <h3 class="card-title fw-bold mb-0 text-success">
-                        {% if total_teachers > 0 %}{{ (total_teachers * 0.82)|int }}{% else %}0{% endif %} 
-                        <span class="fs-6 fw-normal text-muted">人</span>
-                    </h3>
+    <!-- Flash 訊息提示 -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm mb-4" role="alert">
+             <i class="bi bi-info-circle-fill me-2"></i> {{ message }}
+             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- 📊 頂部三大核心數據卡片 -->
+    <div class="row g-3 mb-4">
+        <!-- 1. 全校編制教師總數 -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-3 bg-white border-start border-primary border-4 h-100">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-uppercase text-muted fw-bold small mb-1">全校編制教師總數</div>
+                        <div class="h3 mb-0 fw-bold text-dark">{{ total_teachers }} <span class="fs-6 text-muted font-normal">人</span></div>
+                    </div>
+                    <div class="bg-primary bg-opacity-10 p-3 rounded-circle text-primary">
+                        <i class="bi bi-people-fill fs-3"></i>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="col-12 col-sm-6 col-xl-4">
-        <div class="card card-counter counter-failed h-100 bg-white">
-            <div class="card-body d-flex align-items-center">
-                <div class="rounded-circle bg-danger bg-opacity-10 p-3 me-3">
-                    <i class="bi bi-exclamation-circle text-danger fs-3"></i>
-                </div>
-                <div>
-                    <h6 class="card-subtitle text-muted mb-1">尚待加強補修教師</h6>
-                    <h3 class="card-title fw-bold mb-0 text-danger">
-                        {% if total_teachers > 0 %}{{ total_teachers - (total_teachers * 0.82)|int }}{% else %}0{% endif %} 
-                        <span class="fs-6 fw-normal text-muted">人</span>
-                    </h3>
+        <!-- 2. 數位學習基本門檻 (A1) 達成人數 -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-3 bg-white border-start border-success border-4 h-100">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-uppercase text-muted fw-bold small mb-1">數位學習基本門檻 (A1) 達成</div>
+                        <div class="h3 mb-0 fw-bold text-success">{{ completed_teachers }} <span class="fs-6 text-muted font-normal">人</span></div>
+                    </div>
+                    <div class="bg-success bg-opacity-10 p-3 rounded-circle text-success">
+                        <i class="bi bi-patch-check-fill fs-3"></i>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-</div>
 
-<div class="row g-4">
-    <div class="col-12 col-lg-6">
-        <div class="card shadow-sm border-0 h-100 bg-white">
-            <div class="card-header bg-transparent border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
-                <h5 class="fw-bold mb-0 text-secondary">
-                    <i class="bi bi-bookmark-star text-warning me-2"></i>核心增能指標完成率 (A系列)
-                </h5>
-                <span class="badge bg-light text-dark border">基礎門檻</span>
-            </div>
-            <div class="card-body px-4 pb-4">
-                <div class="mb-4">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="fw-semibold" style="font-size: 0.9rem;">A1 數位學習工作坊(一)</span>
-                        <span class="text-primary fw-bold" style="font-size: 0.9rem;">92.5%</span>
+        <!-- 3. 待加強/未採認人數 -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-3 bg-white border-start border-warning border-4 h-100">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-uppercase text-muted fw-bold small mb-1">基本門檻待加強人數</div>
+                        <div class="h3 mb-0 fw-bold text-warning">{{ pending_teachers }} <span class="fs-6 text-muted font-normal">人</span></div>
                     </div>
-                    <div class="progress progress-admin">
-                        <div class="progress-bar bg-primary" role="progressbar" style="width: 92.5%;" aria-valuenow="92.5" aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
-                </div>
-
-                <div class="mb-4">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="fw-semibold" style="font-size: 0.9rem;">A2 數位學習工作坊(二)</span>
-                        <span class="text-primary fw-bold" style="font-size: 0.9rem;">85.0%</span>
-                    </div>
-                    <div class="progress progress-admin">
-                        <div class="progress-bar bg-primary" role="progressbar" style="width: 85.0%;" aria-valuenow="85" aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
-                </div>
-
-                <div class="mb-2">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="fw-semibold" style="font-size: 0.9rem;">A3 數位素養進階研習</span>
-                        <span class="text-primary fw-bold" style="font-size: 0.9rem;">64.2%</span>
-                    </div>
-                    <div class="progress progress-admin">
-                        <div class="progress-bar bg-info" role="progressbar" style="width: 64.2%;" aria-valuenow="64.2" aria-valuemin="0" aria-valuemax="100"></div>
+                    <div class="bg-warning bg-opacity-10 p-3 rounded-circle text-warning">
+                        <i class="bi bi-exclamation-triangle-fill fs-3"></i>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="col-12 col-lg-6">
-        <div class="card shadow-sm border-0 h-100 bg-white">
-            <div class="card-header bg-transparent border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
-                <h5 class="fw-bold mb-0 text-secondary">
-                    <i class="bi bi-cpu text-info me-2"></i>進階應用與學科融入率 (B~E系列)
-                </h5>
-                <span class="badge bg-light text-dark border">政策指標</span>
-            </div>
-            <div class="card-body px-4 pb-4">
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="fw-semibold" style="font-size: 0.85rem;">B1 智慧學習課堂教學應用</span>
-                        <span class="text-success fw-bold" style="font-size: 0.85rem;">78.1%</span>
-                    </div>
-                    <div class="progress progress-admin">
-                        <div class="progress-bar bg-success" role="progressbar" style="width: 78.1%;" aria-valuenow="78.1" aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
-                </div>
+    <!-- 🏢 各處室動態分組折疊區塊統計 -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4">
+        <div class="card-header bg-dark text-white fw-bold py-3">
+            <i class="bi bi-diagram-3-fill me-2 text-warning"></i> 各處室政策指標達成率詳細統計
+        </div>
+        <div class="card-body p-4 bg-light">
+            <div class="accordion" id="deptAccordion">
 
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="fw-semibold" style="font-size: 0.85rem;">B5-1 生成式AI與教育應用工作坊</span>
-                        <span class="text-success fw-bold" style="font-size: 0.85rem;">88.7%</span>
-                    </div>
-                    <div class="progress progress-admin">
-                        <div class="progress-bar bg-success" role="progressbar" style="width: 88.7%;" aria-valuenow="88.7" aria-valuemin="0" aria-valuemax="100"></div>
+                {% for dept_name, tags in dept_groups.items() %}
+                {% set dept_index = loop.index %}
+                <div class="accordion-item border-0 mb-3 rounded-3 shadow-sm overflow-hidden">
+                    <h2 class="accordion-header" id="heading{{ dept_index }}">
+                        <button class="accordion-button fw-bold fs-6 py-3 {% if not loop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ dept_index }}" aria-expanded="{% if loop.first %}true{% else %}false{% endif %}" aria-controls="collapse{{ dept_index }}">
+                            <i class="bi bi-building me-2 text-primary"></i> {{ dept_name }} (涵蓋 {{ tags|length }} 項政策指標)
+                        </button>
+                    </h2>
+                    <div id="collapse{{ dept_index }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}" aria-labelledby="heading{{ dept_index }}" data-bs-parent="#deptAccordion">
+                        <div class="accordion-body bg-white p-4">
+                            <div class="row g-3">
+                                {% for tag in tags %}
+                                {% set stat = tag_stats.get(tag, {'count': 0, 'percentage': 0.0}) %}
+                                {% set display_title = tag_display_names.get(tag, tag) %}
+                                <div class="col-md-6 col-lg-4">
+                                    <div class="p-3 border rounded-3 bg-light">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="fw-bold text-dark" title="{{ display_title }}">
+                                                <i class="bi bi-tag-fill text-primary me-1"></i> 指標 {{ tag }}
+                                                <small class="text-primary fw-normal">({{ display_title }})</small>
+                                            </span>
+                                            <span class="badge bg-primary rounded-pill px-2 py-1">{{ stat.count }} / {{ total_teachers }} 人</span>
+                                        </div>
+                                        
+                                        <div class="progress mb-2" style="height: 10px;">
+                                            <div class="progress-bar {% if stat.percentage >= 80 %}bg-success{% elif stat.percentage >= 50 %}bg-info{% else %}bg-warning{% endif %}" 
+                                                 role="progressbar" 
+                                                 style="width: {{ stat.percentage }}%;" 
+                                                 aria-valuenow="{{ stat.percentage }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="d-flex justify-content-between text-muted extra-small">
+                                            <span>達成進度</span>
+                                            <span class="fw-bold text-dark">{{ stat.percentage }}%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
                     </div>
                 </div>
+                {% endfor %}
 
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="fw-semibold" style="font-size: 0.85rem;">B5-2 生成式AI融入學科領域教學</span>
-                        <span class="text-success fw-bold" style="font-size: 0.85rem;">72.3%</span>
-                    </div>
-                    <div class="progress progress-admin">
-                        <div class="progress-bar bg-success" role="progressbar" style="width: 72.3%;" aria-valuenow="72.3" aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
-                </div>
-
-                <div class="mb-1">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="fw-semibold" style="font-size: 0.85rem;">C、D、E 跨領域前瞻數位研習</span>
-                        <span class="text-secondary fw-bold" style="font-size: 0.85rem;">45.8%</span>
-                    </div>
-                    <div class="progress progress-admin">
-                        <div class="progress-bar bg-secondary" role="progressbar" style="width: 45.8%;" aria-valuenow="45.8" aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
-</div>
 
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="alert alert-light border shadow-sm p-4">
-            <h5 class="fw-bold text-dark mb-2"><i class="bi bi-info-circle text-primary me-2"></i>行政人員快速作業指引</h5>
-            <p class="text-muted mb-0" style="font-size: 0.9rem;">
-                首次使用系統或新學期開始，請先點選左側選單的 <strong>3.1 教師資料管理</strong> 匯入全校教師預設名冊（維持主管機關之原始教師順序基礎）。<br>
-                接著前往 <strong>3.2 研習檔案匯入</strong> 將外部下載的巨量研習紀錄原始 CSV 檔拖入系統，系統將在背景自動比對課程代碼與實核時數（自動剔除時數為0的未通過資料），您即可一鍵產出符合送件規範之公文與報表。
-            </p>
-        </div>
-    </div>
 </div>
 {% endblock %}

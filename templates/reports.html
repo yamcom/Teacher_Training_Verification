@@ -1,116 +1,121 @@
 {% extends 'base.html' %}
 
-{% block title %}報表輸出中心 - 教師研習檢核與統計管理系統 (TTVS){% endblock %}
-
-{% block page_title %}
-<i class="bi bi-printer-fill text-primary me-2"></i>3.7 & 第8章 報表輸出與發文中心
-{% endblock %}
+{% block title %}研習檢核清冊與報表匯出 - {{ system_name }}{% endblock %}
 
 {% block content %}
-<div class="card shadow-sm border-0 bg-white mb-4">
-    <div class="card-body p-4">
-        <h5 class="fw-bold text-secondary mb-2"><i class="bi bi-send-check-fill text-success me-2"></i>主管機關送件審查說明</h5>
-        <p class="text-muted small mb-0">
-            本專區專為產出符合教育局審查標準之發文格式而設計。所有導出之報表皆已動態連結後端檢核核心，自動判定「實核時數 &gt; 0」為通過。
-            <strong>雙欄 CSV 檔</strong>完全維持行政預設之教師順序基礎，並將通過指標以「.」進行串接（例如：`A1.B5-1.B5-2`），可直接貼回 Excel 送件表單。
-        </p>
-    </div>
-</div>
+<div class="container-fluid py-4">
 
-<div class="row g-4">
-    <div class="col-12 col-md-6">
-        <div class="card shadow-sm border-0 h-100 bg-white card-counter" style="border-top: 4px solid #198754;">
-            <div class="card-body p-4 d-flex flex-column justify-content-between">
-                <div>
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <h5 class="fw-bold text-dark mb-0">全校研習統計表 (雙欄)</h5>
-                        <span class="badge bg-success-subtle text-success border border-success-subtle">CSV 格式</span>
+    <!-- 頁面頂部標題 -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-2 border-bottom">
+        <div>
+            <h2 class="h3 font-weight-bold text-gray-800 mb-1">
+                <i class="bi bi-file-earmark-bar-graph-fill text-primary me-2"></i> 研習檢核清冊與報表匯出
+            </h2>
+            <p class="text-muted small mb-0">提供全校處室政策指標達成名冊匯出、未採認紀錄檢視與各類審核統計報表下載</p>
+        </div>
+        <div class="mt-2 mt-md-0 d-flex gap-2">
+            <a href="{{ url_for('report.export_excel') }}" class="btn btn-success fw-bold shadow-sm">
+                <i class="bi bi-file-earmark-excel-fill me-1"></i> 匯出完整統計 Excel
+            </a>
+            <a href="{{ url_for('report.export_pdf') }}" class="btn btn-danger fw-bold shadow-sm" target="_blank">
+                <i class="bi bi-file-earmark-pdf-fill me-1"></i> 預覽/列印 PDF 報表
+            </a>
+        </div>
+    </div>
+
+    <!-- Flash 訊息提示 -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm mb-4" role="alert">
+             <i class="bi bi-info-circle-fill me-2"></i> {{ message }}
+             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- ========================================================================= -->
+    <!-- 📊 各處室指標統計摘要 -->
+    <!-- ========================================================================= -->
+    <div class="row g-3 mb-4">
+        {% for dept_name, tags in dept_groups.items() %}
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm rounded-3 h-100 bg-white border-top border-primary border-3">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold text-dark"><i class="bi bi-building text-primary me-1"></i> {{ dept_name }}</span>
+                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill">{{ tags|length }} 項指標</span>
                     </div>
-                    <p class="text-muted small mb-4">
-                        依據主管機關<strong>「附件2」</strong>審查樣板客製化排版。文件自動平分為左右兩欄以精簡篇幅，欄位包含：`職稱,姓名,通過研習`。已內建 UTF-8 BOM 編碼，Excel 開啟絕不亂碼。
-                    </p>
+                    <div class="text-muted extra-small mb-2">包含標籤：{{ tags | join(', ') }}</div>
+                    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+                        <span class="small text-muted">檢核涵蓋率</span>
+                        <span class="fw-bold text-success">100%</span>
+                    </div>
                 </div>
-                <div class="d-grid">
-                    <a href="/export/all_school_csv" class="btn btn-sm btn-success py-2 fw-semibold">
-                        <i class="bi bi-filetype-csv me-2"></i>導出審查用雙欄 CSV
-                    </a>
-                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- 📄 全校教師政策指標採認檢核總表 -->
+    <!-- ========================================================================= -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4">
+        <div class="card-header bg-dark text-white fw-bold py-3 d-flex justify-content-between align-items-center">
+            <div>
+                <i class="bi bi-table me-2 text-warning"></i> 全校教師研習指標通過清冊 (精準比對 3.1 名冊)
+            </div>
+            <span class="badge bg-secondary">總計 {{ teachers|length }} 位教師</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 border-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3" style="width: 100px;">處室職稱</th>
+                            <th style="width: 120px;">教師姓名</th>
+                            <th style="width: 110px;">虛擬編號</th>
+                            <th>已通過政策指標標籤 (通過時間在認證範圍內)</th>
+                            <th class="text-center" style="width: 120px;">通過指標數</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if teachers %}
+                            {% for teacher in teachers %}
+                            <tr>
+                                <td class="ps-3 fw-bold text-secondary">{{ teacher.position }}</td>
+                                <td class="fw-bold text-primary">{{ teacher.name }}</td>
+                                <td><code>{{ teacher.teacher_code or '未設定' }}</code></td>
+                                <td>
+                                    {% if teacher.passed_tags %}
+                                        {% for tag in teacher.passed_tags %}
+                                        <span class="badge bg-success-subtle text-success border border-success me-1 mb-1">{{ tag }}</span>
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="text-muted small italic"><i class="bi bi-dash-circle me-1"></i>暫無採認通過指標</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge {% if teacher.passed_tags|length > 0 %}bg-primary{% else %}bg-secondary{% endif %} rounded-pill px-3 py-1">
+                                        {{ teacher.passed_tags|length }} 項
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center py-5 text-muted">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                    目前尚無教師研習檢核數據，請先由【3.1 匯入名冊】與【3.2 匯入研習紀錄】上傳檔案。
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    <div class="col-12 col-md-6">
-        <div class="card shadow-sm border-0 h-100 bg-white card-counter" style="border-top: 4px solid #0d6efd;">
-            <div class="card-body p-4 d-flex flex-column justify-content-between">
-                <div>
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <h5 class="fw-bold text-dark mb-0">全校研習統計總表 (含明細)</h5>
-                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Excel 格式</span>
-                    </div>
-                    <p class="text-muted small mb-4">
-                        內含兩個獨立活頁簿 Sheet：<strong>【全校研習統計總表】</strong>呈現每位教師串接後的政策指標縮寫；<strong>【通過研習詳細明細】</strong>則完整展開課程代碼與主辦單位，便於行政抽查對照。
-                    </p>
-                </div>
-                <div class="d-grid">
-                    <a href="/export/all_school_excel" class="btn btn-sm btn-primary py-2 fw-semibold">
-                        <i class="bi bi-file-earmark-excel me-2"></i>導出完整統計 Excel
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-12 col-md-6">
-        <div class="card shadow-sm border-0 h-100 bg-white card-counter" style="border-top: 4px solid #0dcaf0;">
-            <div class="card-body p-4 d-flex flex-column justify-content-between">
-                <div>
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <h5 class="fw-bold text-dark mb-0">教師研習檢核簽呈公文</h5>
-                        <span class="badge bg-info-subtle text-info border border-info-subtle">Word 函稿</span>
-                    </div>
-                    <p class="text-muted small mb-4">
-                        自動生成標準學校行政公文簽呈格式。內建受文者（教育局）、發文字號、主旨與法規說明內文，並自動在公文底部建立全校前 10 筆核心主管之研習通過摘要表格與校長簽核欄位。
-                    </p>
-                </div>
-                <div class="d-grid">
-                    <a href="/export/official_word_report" class="btn btn-sm btn-info text-white py-2 fw-semibold">
-                        <i class="bi bi-file-earmark-word-fill me-2"></i>導出正式函稿 Word
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-12 col-md-6">
-        <div class="card shadow-sm border-0 h-100 bg-white card-counter" style="border-top: 4px solid #ffc107;">
-            <div class="card-body p-4 d-flex flex-column justify-content-between">
-                <div>
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <h5 class="fw-bold text-dark mb-0">指標指標統計分析報告</h5>
-                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Word 報告</span>
-                    </div>
-                    <p class="text-muted small mb-4">
-                        專為校務會議與內部策進方針設計之分析報告。內含 A1 至 E 各項目之通過人數、未通過人數與通過率公式計算結果，並採用美化之深藍色行政風表格排版，附帶行政策進建議。
-                    </p>
-                </div>
-                <div class="d-grid">
-                    <a href="/export/tag_analysis_report" class="btn btn-sm btn-warning text-dark py-2 fw-semibold">
-                        <i class="bi bi-file-earmark-bar-graph-fill me-2"></i>導出分析報告 Word
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="alert alert-secondary border-0 shadow-sm p-3 mb-0" style="background-color: #f1f3f5;">
-            <small class="text-secondary d-block">
-                <i class="bi bi-exclamation-triangle me-1"></i><strong>發文前置檢查提示：</strong>
-                請確保您已於【3.2 研習檔案匯入】完成最新研習數據的導入作業。若發文前有教師臨時補修時數，您只需在【3.5 教師研習查詢】手動修改該員時數，本專區導出之所有報表與 Word 公文內表格皆會<strong>自動即時同步同步</strong>，不需重新上傳檔案。
-            </small>
-        </div>
-    </div>
 </div>
 {% endblock %}

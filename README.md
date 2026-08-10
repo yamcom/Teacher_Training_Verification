@@ -5,7 +5,7 @@
 ![Framework](https://img.shields.io/badge/framework-Flask_3.x-green)
 ![Environment](https://img.shields.io/badge/env-uv--managed-purple)
 
-本系統專為國小端「推動中小學數位學習精進方案」行政審查量身打造。針對全國教師在職進修網匯出高達 15,829 筆的巨量大數據，提供**智慧型模糊標籤清洗**、**全校達成率動態儀表板**、**未通過人員精準催辦追蹤**，並可一鍵導出符合局端送件規範的**雙欄審查 CSV**、**正式簽呈公文 docx** 檔案。
+本系統專為國小端「推動中小學數位學習精進方案」行政審查量身打造。針對全國教師在職進修網匯出超過 1萬5千多 筆的巨量大數據，提供**智慧型模糊標籤清洗**、**全校達成率動態儀表板**、**未通過人員精準催辦追蹤**，並可一鍵導出符合局端送件規範的**雙欄審查 CSV**、**正式簽呈公文 docx** 檔案。
 
 ## 🚀 系統亮點
 1. **動態指標自訂 (對齊教育部標準)**：整合教育部 113-116 年師資培訓架構，支援自訂 Regex 規則（如：`精進數位.*A1`、`工作坊[（(]一[）)]`），未來指標擴充免修程式碼。
@@ -49,6 +49,7 @@ ttvs_project/
 Bash
 pip install -r requirements.txt
 
+如果您使用的是 uv 環境包管理器，可以執行uv pip install -r requirements.txt
 
 2. 初始化與啟動系統
 執行 main.py 啟動 Flask 本地開發伺服器，系統會自動在根目錄建立 database.db：
@@ -57,5 +58,14 @@ Bash
 python main.py
 啟動後，即可用瀏覽器打開 http://127.0.0.1:5000/ 進入系統後台儀表板。
 
-3. 送件報表導出
-訪問 /export/all_school_csv 路由，系統會將各教師符合條件且通過（時數 > 0）的標籤自動以 . 串接（例如：A1.B5-1.C），並以 utf-8-sig（帶 BOM）編碼導出 CSV，確保 Excel 開啟不產生亂碼。
+3. Admin的清空全部資料庫按鈕，和直接刪除database.db檔案的差別是
+
+# # 檔案鎖定問題 (File Lock)
+# 1. 避免伺服器衝突與崩潰：內建按鈕透過 Flask / SQLAlchemy 的數據庫連線（Session）執行 SQL清空指令，過程安全順暢；而直接刪除檔案若逢系統運作中，容易因檔案被程序鎖定（File Lock）而引發OperationalError 導致伺服器崩潰。
+
+# 2. 資料庫結構 (Schema)完整保留資料表架構：按鈕操作僅會清除資料表內的「數據資料列（Rows）」，所有的資料表結構（Tables）、欄位型態、主鍵（Primary Key）與索引（Index）均完好無損。
+
+# 3. 管理者帳號 (Admin)密碼與防護  除非遺失Admin密碼，才建議刪除database.db檔案，會連同資料一併抹除，系統重新初始化admin帳號的密碼admin123。(設定檔案config.py)
+
+# 4. 系統資料庫檔案位置
+instance/database.db。系統在初始化時會確認 instance 資料夾是否存在，若不存在會自動建立，並將 database.db 與 dynamic_tag_rules.json 一併存放在 instance 資料夾內。

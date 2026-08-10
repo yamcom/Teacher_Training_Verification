@@ -1,252 +1,506 @@
 {% extends 'base.html' %}
 
-{% block title %}指標關鍵字設定 - 教師研習檢核與統計管理系統 (TTVS){% endblock %}
-
-{% block page_title %}
-<i class="bi bi-gear-fill text-warning me-2"></i>政策指標與關鍵字動態自訂
-{% endblock %}
-
-{% block extra_css %}
-<style>
-    .pattern-item { transition: all 0.2s ease; }
-    .pattern-item:hover { border-color: #6c757d; }
-    .btn-xs { padding: 0.1rem 0.3rem; font-size: 0.75rem; border-radius: 0.2rem; }
-    .moe-standard { background-color: #f8f9fa; border-left: 4px solid #0dcaf0; }
-</style>
-{% endblock %}
+{% block title %}指標關鍵字與日期設定 - {{ system_name }}{% endblock %}
 
 {% block content %}
-<div class="card shadow-sm border-0 bg-white mb-4">
-    <div class="card-body p-4">
-        <div class="d-flex align-items-center mb-2">
-            <h5 class="fw-bold text-secondary mb-0"><i class="bi bi-lightbulb text-warning me-2"></i>教育部「精進數位」研習識別指引</h5>
-            <span class="badge bg-info text-dark ms-3">依據 113-116 年師資培訓架構</span>
-        </div>
-        <p class="text-muted small mb-0">
-            本系統已支援教育部<strong>「推動中小學數位學習精進方案」</strong>(<a href="https://pads.moe.edu.tw/download_file.php?file=_upload_b67a86907d85354ecb3196184b06db98.pdf&old=uploads" target="_new">參考資料網址</a>)<br>當教育局精進數位方案發布全新的研習指標（例如全新的 A4 系列），行政主任無需修改程式碼。您可在此直接點選右側按鈕建立新標籤，並填寫網頁標籤或正則表達式（如 <code>r'A4'</code> 或 <code>r'自主學習路徑'</code>）。系統在進行巨量大數據檢核時，將會毫秒級自動套用新規則。
-        </p>
-    </div>
-</div>
+<div class="container-fluid py-4">
 
-<div class="row g-4">
-    <div class="col-12 col-xl-7">
-        <div class="card shadow-sm border-0 bg-white">
-            <div class="card-header bg-transparent border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
-                <h5 class="fw-bold mb-0 text-secondary"><i class="bi bi-tags me-2"></i>系統現行指標規則庫</h5>
-                <button class="btn btn-sm btn-primary" onclick="openAddTagModal()">
-                    <i class="bi bi-plus-circle me-1"></i>新增政策指標
+    <!-- 頁面頂部主標題 -->
+    <div class="mb-4">
+        <h2 class="h3 font-weight-bold text-gray-800 mb-1">
+            <i class="bi bi-tags-fill text-primary me-2"></i> 各處室政策指標關鍵字與採認學年度日期設定
+        </h2>
+        <p class="text-muted small mb-0">管理教育部與各處室指標匹配關鍵字與研習採認日期起訖範圍</p>
+    </div>
+
+    <!-- Flash 訊息提示 -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm mb-4" role="alert">
+             <i class="bi bi-info-circle-fill me-2"></i> {{ message }}
+             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+
+    <!-- ========================================================================= -->
+    <!-- 🏛️ 區塊一：指標政策法規來源與參考連結 -->
+    <!-- ========================================================================= -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4">
+        <div class="card-header bg-primary bg-opacity-10 text-primary fw-bold py-3">
+            <i class="bi bi-book-half me-2"></i> 區塊一：指標政策法規來源與參考連結
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-3">
+                <!-- 子項目一 -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="p-3 border rounded bg-light h-100 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="fw-bold text-dark mb-1"><i class="bi bi-bank me-1 text-primary"></i> 教育部精進數位學習入口網</div>
+                            <p class="text-muted small mb-2">「推動中小學數位學習精進方案」最新政策、研習實施計畫與審查基準。</p>
+                        </div>
+                        <div>
+                            <a href="https://pads.moe.edu.tw" target="_blank" class="btn btn-sm btn-outline-primary fw-bold w-100">
+                                前往教育部網站 <i class="bi bi-box-arrow-up-right ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 子項目二 -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="p-3 border rounded bg-light h-100 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="fw-bold text-dark mb-1"><i class="bi bi-gender-ambiguous me-1 text-danger"></i> 性別平等教育資源網</div>
+                            <p class="text-muted small mb-2">教育部性別平等教育法規、政策宣導事項與研習課程說明。</p>
+                        </div>
+                        <div>
+                            <a href="https://gender.edu.tw" target="_blank" class="btn btn-sm btn-outline-danger fw-bold w-100">
+                                前往性平教育網站 <i class="bi bi-box-arrow-up-right ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 子項目三 -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="p-3 border rounded bg-light h-100 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="fw-bold text-dark mb-1"><i class="bi bi-shield-check me-1 text-success"></i> 交通安全入口網 (168)</div>
+                            <p class="text-muted small mb-2">交通安全教育指引、相關政策法規說明與教師研習教材。</p>
+                        </div>
+                        <div>
+                            <a href="https://168.motc.gov.tw" target="_blank" class="btn btn-sm btn-outline-success fw-bold w-100">
+                                前往交通安全網站 <i class="bi bi-box-arrow-up-right ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ========================================================================= -->
+    <!-- ⚙️ 區塊二：指標關鍵字與日期範圍核心管理 -->
+    <!-- ========================================================================= -->
+    <div class="card border-0 shadow-lg rounded-3 mb-5">
+        <div class="card-header bg-dark text-white fw-bold py-3 d-flex justify-content-between align-items-center">
+            <div>
+                <i class="bi bi-gear-wide-connected me-2 text-warning"></i> 區塊二：指標關鍵字與日期範圍核心管理
+            </div>
+            <!-- 📥 📤 匯入、匯出與【清空所有研習紀錄】控制按鈕 -->
+            <div class="d-flex gap-2">
+                <!-- 🔐 僅限 Admin 角色顯示：【清空所有研習紀錄】控制按鈕 -->
+                {% if current_user.is_authenticated and current_user.role == 'admin' %}
+                <button type="button" class="btn btn-outline-danger btn-sm font-weight-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#clearTrainingsModal">
+                    <i class="bi bi-trash3-fill me-1"></i> 清空所有研習紀錄
                 </button>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover table-admin table-striped align-middle mb-0">
-                        <thead>
-                            <tr>
-                                <th style="width: 20%;">指標代碼</th>
-                                <th style="width: 60%;">識別關鍵字規則庫 (Regex 模式)</th>
-                                <th style="width: 20%;" class="text-center">行政操作</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for tag, patterns in tag_rules.items() %}
-                            <tr id="tag-row-{{ tag }}">
-                                <td class="px-3 fw-bold text-secondary text-center">
-                                    <span class="tag-indicator px-2 py-1 bg-primary bg-opacity-10 text-primary border-primary border-opacity-25">{{ tag }}</span>
-                                </td>
-                                <td>
-                                    <div class="d-flex flex-wrap gap-1">
-                                        {% for pattern in patterns %}
-                                        <span class="badge bg-light text-secondary border small" style="font-family: monospace; font-size: 0.8rem;">{{ pattern }}</span>
-                                        {% endfor %}
-                                    </div>
-                                </td>
-                                <td class="text-center">
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-secondary py-1 btn-edit-tag" 
-                                                data-tag="{{ tag }}" 
-                                                data-patterns='{{ patterns|tojson }}'
-                                                title="修改規則">
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
-                                        <button class="btn btn-outline-danger py-1" onclick="deleteTagRule('{{ tag }}')" title="刪除指標">
-                                            <i class="bi bi-trash3"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="3" class="text-center py-5 text-muted">
-                                    <i class="bi bi-folder-x fs-1 d-block mb-2"></i>尚未設定 any 指標。
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-12 col-xl-5">
-        <div class="card shadow-sm border-0 bg-white">
-            <div class="card-header bg-transparent border-0 pt-4 px-4">
-                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-info-square text-info me-2"></i>語法防誤判設定指引</h5>
-            </div>
-            <div class="card-body px-4 pb-4">
-                <div class="moe-standard p-3 mb-3">
-                    <p class="fw-bold text-info small mb-1"><i class="bi bi-file-pdf me-2"></i>精進數位方案官方建議規則</p>
-                    <ul class="text-muted mb-0" style="font-size: 0.75rem;">
-                        <li><strong>A1/A2 識別：</strong> <code>數位學習工作坊[（(][一二12][）)]</code></li>
-                        <li><strong>A3 識別：</strong> <code>精進數位.*A3</code> 或 <code>數位素養.*進階</code></li>
-                        <li><strong>B1 識別：</strong> <code>智慧學習.*教學應用</code></li>
-                    </ul>
-                </div>
-                
-                <p class="text-muted small">通用正規表達式參考：</p>
-                <div class="table-responsive">
-                    <table class="table table-bordered table-sm small mb-0">
-                        <thead class="table-light text-secondary">
-                            <tr>
-                                <th style="width: 40%;">建議寫法範例</th>
-                                <th style="width: 60%;">行政識別效果說明</th>
-                            </tr>
-                        </thead>
-                        <tbody class="text-muted" style="font-size: 0.8rem;">
-                            <tr>
-                                <td><code class="text-danger">精進數位.*A1</code></td>
-                                <td>匹配包含「精進數位」且後續含有「A1」的名稱。</td>
-                            </tr>
-                            <tr>
-                                <td><code class="text-danger">工作坊[（(]一[）)]</code></td>
-                                <td>相容全/半形括號的「工作坊（一）」。</td>
-                            </tr>
-                            <tr>
-                                <td><code class="text-danger">生成式AI.*教育應用</code></td>
-                                <td>識別名稱含「生成式AI」與「教育應用」者。</td>
-                            </tr>
-                            <tr>
-                                <td><code class="text-danger">[^a-zA-Z0-9]C$</code></td>
-                                <td>精準匹配結尾為單獨字母 C 的課程（防誤判）。</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+                {% endif %}
 
-<div class="modal fade" id="tagModal" data-bs-backdrop="static" data-bs-focus="false">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-light">
-                <h5 class="modal-title fw-bold text-dark" id="modalTitle">自訂政策指標關鍵字</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn btn-success btn-sm font-weight-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#importRulesModal">
+                    <i class="bi bi-file-earmark-arrow-up-fill me-1"></i> 匯入設定關鍵字設定檔
+                </button>
+                <a href="{{ url_for('tag.export_rules') }}" class="btn btn-outline-light btn-sm font-weight-bold shadow-sm">
+                    <i class="bi bi-file-earmark-arrow-down-fill me-1"></i> 匯出設定檔
+                </a>
             </div>
-            <form id="tagRuleForm" onsubmit="submitTagRule(event)">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold small text-secondary">指標代碼 / 標籤名稱 <span class="text-danger">*</span></label>
-                        <input type="text" id="modal_tag_name" name="tag_name" class="form-control form-control-sm" placeholder="例如：A1、B5-1" required>
+        </div>
+
+        <div class="card-body p-4 bg-light">
+            <form action="{{ url_for('tag.tag_settings_page') }}" method="POST" id="tagSettingsForm">
+                
+                <!-- 各指標卡片列表區域 -->
+                <div class="row g-4" id="rulesContainer">
+                    {% for tag in preset_tags %}
+                    {% set rule_data = tag_rules.get(tag, {}) if tag_rules else rules.get(tag, {}) %}
+                    {% set is_ever = rule_data.get('is_ever_trained', true) if rule_data is mapping else true %}
+                    {% set start_d = rule_data.get('start_date', '1900-01-01') if rule_data is mapping else '1900-01-01' %}
+                    {% set end_d = rule_data.get('end_date', '') if rule_data is mapping else '' %}
+                    {% set keywords_list = rule_data.get('keywords', rule_data) if rule_data is mapping else rule_data %}
+                    {% set display_name = tag_display_names.get(tag, tag) if tag_display_names else tag %}
+
+                    <div class="col-md-6 col-lg-4" id="card-tag-{{ tag }}">
+                        <div class="card border-0 shadow-sm rounded-3 h-100">
+                            
+                            <!-- 卡片標頭：顯示指標代碼與第二行指標名稱 -->
+                            <div class="card-header bg-white fw-bold text-primary d-flex align-items-center justify-content-between py-3 border-bottom">
+                                <span class="fs-6">
+                                    <i class="bi bi-hash text-warning"></i> 指標 <strong>{{ tag }}</strong>
+                                    <span class="badge bg-primary bg-opacity-10 text-primary ms-1" id="badge_title_{{ tag }}">{{ display_name }}</span>
+                                </span>
+                                <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2 small" onclick="clearAndRemoveTag('{{ tag }}')" title="刪除此指標">
+                                    <i class="bi bi-trash3-fill me-1"></i> 刪除
+                                </button>
+                            </div>
+                            
+                            <div class="card-body">
+                                <!-- 1. 匹配關鍵字 / Pattern 輸入框 (第二行為名稱) -->
+                                <div class="mb-3">
+                                    <label for="tag_{{ tag }}" class="form-label small text-muted mb-1 fw-bold">
+                                        匹配 Pattern / 關鍵字 (每行一個，以第 2 行為顯示名稱)：
+                                    </label>
+                                    <textarea class="form-control font-monospace text-dark border-1" id="tag_{{ tag }}" name="tag_{{ tag }}" rows="4" placeholder="請輸入關鍵字...&#10;第 2 行為顯示名稱" oninput="updateCardTitle('{{ tag }}')">{{ keywords_list | join('\n') if keywords_list is iterable and keywords_list is not string else keywords_list }}</textarea>
+                                </div>
+
+                                <hr class="my-2">
+
+                                <!-- 2. 研習日期檢核條件區塊 -->
+                                <div class="p-2 bg-light rounded border">
+                                    <div class="form-check form-switch mb-2">
+                                        <input class="form-check-input" type="checkbox" id="ever_trained_{{ tag }}" name="ever_trained_{{ tag }}" onchange="toggleTagDateInputs('{{ tag }}')" {% if is_ever %}checked{% endif %}>
+                                        <label class="form-check-label small fw-bold text-primary" for="ever_trained_{{ tag }}">
+                                            <i class="bi bi-check-circle-fill me-1"></i>研習過即可 (不限歷史日期)
+                                        </label>
+                                    </div>
+
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <label class="form-label extra-small text-muted mb-0">研習判斷開始日</label>
+                                            <input type="date" class="form-control form-control-sm" id="start_date_{{ tag }}" name="start_date_{{ tag }}" value="{{ start_d }}" {% if is_ever %}readonly{% endif %}>
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label extra-small text-muted mb-0">研習判斷結束日</label>
+                                            <input type="date" class="form-control form-control-sm" id="end_date_{{ tag }}" name="end_date_{{ tag }}" value="{{ end_d }}" {% if is_ever %}readonly{% endif %}>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold small text-secondary d-flex justify-content-between align-items-center">
-                            <span>關鍵字識別規則庫 (Regex) <span class="text-danger">*</span></span>
-                            <button type="button" class="btn btn-xs btn-outline-success py-0 px-1" onclick="addPatternInput('')">
-                                <i class="bi bi-plus"></i> 增加欄位
-                            </button>
-                        </label>
-                        <div id="patternsContainer"></div>
-                    </div>
+                    {% endfor %}
                 </div>
-                <div class="modal-footer bg-light py-2">
-                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="submit" class="btn btn-sm btn-primary">儲存規則</button>
+
+                <!-- 儲存全站設定區域 -->
+                <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#addCustomTagModal">
+                        <i class="bi bi-plus-circle-fill me-1"></i> 新增自訂政策指標
+                    </button>
+                    <button type="submit" class="btn btn-primary btn-lg px-5 shadow fw-bold">
+                        <i class="bi bi-floppy-fill me-2"></i> 儲存所有指標關鍵字與日期設定
+                    </button>
                 </div>
             </form>
         </div>
     </div>
+
+
+    <!-- ========================================================================= -->
+    <!-- 📖 區塊三：正規表示式 (Regex) 語法說明與實用示範 -->
+    <!-- ========================================================================= -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4">
+        <div class="card-header bg-info bg-opacity-10 text-dark fw-bold py-3">
+            <i class="bi bi-code-slash me-2 text-info"></i> 區塊三：正規表示式 (Regex) 語法說明與實用示範
+        </div>
+        <div class="card-body p-4">
+            <p class="text-secondary small mb-3">
+                系統比對研習課程名稱時，支援使用 Standard Python Regular Expressions (Regex) 語法。系統會自動進行<strong>不分大小寫</strong>的比對。
+            </p>
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle mb-0 small">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 150px;">Regex 語法</th>
+                            <th style="width: 180px;">比對功能與說明</th>
+                            <th style="width: 250px;">語法範例</th>
+                            <th>可成功匹配之研習課程名稱範例</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code class="fw-bold text-danger">[（(]</code> 與 <code class="fw-bold text-danger">[）)]</code></td>
+                            <td>同時相容全形與半形括號</td>
+                            <td><code>數位學習工作坊[（(]一[）)]</code></td>
+                            <td><span class="badge bg-success-subtle text-success border">113年數位學習工作坊(一)</span> <span class="badge bg-success-subtle text-success border">數位學習工作坊（一）簡報班</span></td>
+                        </tr>
+                        <tr>
+                            <td><code class="fw-bold text-danger">|</code> (Logical OR)</td>
+                            <td>或（滿足任一條件即可）</td>
+                            <td><code>特殊教育|特教知能</code></td>
+                            <td><span class="badge bg-success-subtle text-success border">校本特殊教育研習</span> <span class="badge bg-success-subtle text-success border">特教知能研討會</span></td>
+                        </tr>
+                        <tr>
+                            <td><code class="fw-bold text-danger">.*</code> (Wildcard)</td>
+                            <td>代表任意長度的任何字元</td>
+                            <td><code>安全.*教育</code></td>
+                            <td><span class="badge bg-success-subtle text-success border">交通安全宣導教育</span> <span class="badge bg-success-subtle text-success border">安全維護教育講座</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
 </div>
-{% endblock %}
 
-{% block extra_js %}
+
+<!-- 🔐 1. Admin 專屬：【清空所有研習紀錄】二次確認彈出視窗 Modal -->
+{% if current_user.is_authenticated and current_user.role == 'admin' %}
+<div class="modal fade" id="clearTrainingsModal" tabindex="-1" aria-labelledby="clearTrainingsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title font-weight-bold" id="clearTrainingsModalLabel">
+            <i class="bi bi-exclamation-octagon-fill me-2"></i> 警告：安全清空全站研習紀錄
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="{{ url_for('tag.clear_trainings') }}" method="POST">
+          <div class="modal-body p-4">
+            <div class="alert alert-danger mb-3 small">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                <strong>此操作將清空全站所有研習課程與採認紀錄！</strong>（3.1 教師基本名冊將完好保留）。
+            </div>
+            <div class="mb-3">
+                <label for="confirm_password" class="form-label fw-bold text-dark">
+                    請輸入最高管理者 (Admin) 密碼進行驗證：
+                </label>
+                <input type="password" class="form-control border-danger" id="confirm_password" name="confirm_password" placeholder="請輸入 Admin 密碼" required autocomplete="current-password">
+            </div>
+          </div>
+          <div class="modal-footer bg-light">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消操作</button>
+            <button type="submit" class="btn btn-danger fw-bold">
+                <i class="bi bi-trash3-fill me-1"></i> 確認清空研習紀錄
+            </button>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+
+<!-- 📥 2. 匯入設定關鍵字設定檔 Modal 對話框 -->
+<div class="modal fade" id="importRulesModal" tabindex="-1" aria-labelledby="importRulesModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title font-weight-bold" id="importRulesModalLabel">
+            <i class="bi bi-file-earmark-arrow-up-fill me-2"></i> 匯入設定關鍵字設定檔
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="{{ url_for('tag.import_rules') }}" method="POST" enctype="multipart/form-data">
+          <div class="modal-body p-4">
+            <p class="text-secondary small mb-3">
+                請選擇先前匯出備份的 <code class="fw-bold">.json</code> 檔，或包含 <code class="fw-bold">指標代碼</code> 與 <code class="fw-bold">關鍵字</code> 欄位的 <code class="fw-bold">.csv</code> 檔案。
+            </p>
+            <div class="mb-3">
+                <label for="file" class="form-label font-weight-bold">選擇匯入檔案</label>
+                <input class="form-control" type="file" id="file" name="file" accept=".json, .csv" required>
+            </div>
+            <div class="alert alert-warning py-2 px-3 mb-0 small">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i> 注意：匯入後將自動套用並覆蓋資料庫現有的指標關鍵字與日期規則。
+            </div>
+          </div>
+          <div class="modal-footer bg-light">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+            <button type="submit" class="btn btn-success fw-bold">確認匯入並更新</button>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+<!-- ➕ 3. 新增自訂指標 Modal 對話框 -->
+<div class="modal fade" id="addCustomTagModal" tabindex="-1" aria-labelledby="addCustomTagModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title font-weight-bold" id="addCustomTagModalLabel">
+            <i class="bi bi-plus-square-fill me-2"></i> 新增自訂政策指標
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="mb-3">
+            <label for="new_tag_code" class="form-label font-weight-bold">指標代碼 (例如：AA02、SP7、SA7 或 GA3)</label>
+            <input type="text" class="form-control" id="new_tag_code" placeholder="請輸入新指標代碼">
+        </div>
+      </div>
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-primary fw-bold" id="btnCreateCustomTag">建立政策指標卡片</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- JavaScript 控制邏輯 -->
 <script>
-let tagModalEntity = null;
+// 1. 取得格式化日期字串 YYYY-MM-DD
+function formatDate(d) {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
 
-document.addEventListener('DOMContentLoaded', function() {
-    if (typeof bootstrap !== 'undefined') {
-        tagModalEntity = new bootstrap.Modal(document.getElementById('tagModal'));
+// 2. 處理 [研習過即可] 開關切換
+function toggleTagDateInputs(tagCode) {
+    const chk = document.getElementById(`ever_trained_${tagCode}`);
+    const startInput = document.getElementById(`start_date_${tagCode}`);
+    const endInput = document.getElementById(`end_date_${tagCode}`);
+
+    if (!chk || !startInput || !endInput) return;
+
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const todayStr = formatDate(now);
+
+    if (chk.checked) {
+        startInput.value = '1900-01-01';
+        endInput.value = todayStr;
+        startInput.readOnly = true;
+        endInput.readOnly = true;
+    } else {
+        const augustFirstThisYear = new Date(currentYear, 7, 1);
+        if (now < augustFirstThisYear) {
+            const augustFirstLastYear = new Date(currentYear - 1, 7, 1);
+            startInput.value = formatDate(augustFirstLastYear);
+        } else {
+            startInput.value = formatDate(augustFirstThisYear);
+        }
+        endInput.value = todayStr;
+        startInput.readOnly = false;
+        endInput.readOnly = false;
+    }
+}
+
+// 3. 即時更新卡片標頭顯示名稱（讀取 TextArea 第二行文字）
+function updateCardTitle(tagCode) {
+    const textarea = document.getElementById(`tag_${tagCode}`);
+    const badge = document.getElementById(`badge_title_${tagCode}`);
+    if (!textarea || !badge) return;
+
+    const lines = textarea.value.replace(/\r/g, '').split('\n')
+        .map(l => l.trim())
+        .filter(l => l !== '');
+    
+    if (lines.length >= 2 && lines[1]) {
+        badge.textContent = lines[1];
+    } else if (lines.length >= 1 && lines[0]) {
+        badge.textContent = lines[0];
+    } else {
+        badge.textContent = tagCode;
+    }
+}
+
+// 4. 刪除與清空單一指標卡片
+function clearAndRemoveTag(tagCode) {
+    if (confirm(`確定要刪除指標【${tagCode}】及其相關設定嗎？`)) {
+        const textarea = document.getElementById(`tag_${tagCode}`);
+        if (textarea) textarea.value = '';
+        const card = document.getElementById(`card-tag-${tagCode}`);
+        if (card) card.style.display = 'none';
+    }
+}
+
+// 5. 新增自訂指標卡片邏輯
+function addCustomTagCard() {
+    const tagInput = document.getElementById('new_tag_code');
+    if (!tagInput) return;
+
+    const tagCode = tagInput.value.trim().toUpperCase();
+
+    if (!tagCode) {
+        alert('請輸入有效的指標代碼！');
+        return;
     }
 
-    document.querySelectorAll('.btn-edit-tag').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            const tag = this.getAttribute('data-tag');
-            const patterns = JSON.parse(this.getAttribute('data-patterns'));
-            openEditTag(tag, patterns);
-        });
+    if (document.getElementById(`tag_${tagCode}`)) {
+        alert(`指標【${tagCode}】已存在於頁面中！`);
+        return;
+    }
+
+    const container = document.getElementById('rulesContainer');
+    if (!container) return;
+
+    const todayStr = formatDate(new Date());
+    const colDiv = document.createElement('div');
+    colDiv.className = 'col-md-6 col-lg-4';
+    colDiv.id = `card-tag-${tagCode}`;
+
+    colDiv.innerHTML = `
+        <div class="card border-0 shadow-sm rounded-3 h-100 border-start border-primary border-3">
+            <div class="card-header bg-white fw-bold text-primary d-flex align-items-center justify-content-between py-3 border-bottom">
+                <span class="fs-6">
+                    <i class="bi bi-hash text-warning"></i> 指標 <strong>${tagCode}</strong>
+                    <span class="badge bg-info text-dark ms-1" id="badge_title_${tagCode}">${tagCode}</span>
+                </span>
+                <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2 small" onclick="clearAndRemoveTag('${tagCode}')" title="刪除此指標">
+                    <i class="bi bi-trash3-fill me-1"></i> 刪除
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="tag_${tagCode}" class="form-label small text-muted mb-1 fw-bold">
+                        匹配 Pattern / 關鍵字 (每行一個，以第 2 行為顯示名稱)：
+                    </label>
+                    <textarea class="form-control font-monospace text-dark border-1" id="tag_${tagCode}" name="tag_${tagCode}" rows="4" placeholder="請輸入關鍵字...&#10;第 2 行為顯示名稱" oninput="updateCardTitle('${tagCode}')"></textarea>
+                </div>
+                <hr class="my-2">
+                <div class="p-2 bg-light rounded border">
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="ever_trained_${tagCode}" name="ever_trained_${tagCode}" onchange="toggleTagDateInputs('${tagCode}')" checked>
+                        <label class="form-check-label small fw-bold text-primary" for="ever_trained_${tagCode}">
+                            <i class="bi bi-check-circle-fill me-1"></i>研習過即可 (不限歷史日期)
+                        </label>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label extra-small text-muted mb-0">研習判斷開始日</label>
+                            <input type="date" class="form-control form-control-sm" id="start_date_${tagCode}" name="start_date_${tagCode}" value="1900-01-01" readonly>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label extra-small text-muted mb-0">研習判斷結束日</label>
+                            <input type="date" class="form-control form-control-sm" id="end_date_${tagCode}" name="end_date_${tagCode}" value="${todayStr}" readonly>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    container.appendChild(colDiv);
+    
+    const modalEl = document.getElementById('addCustomTagModal');
+    if (modalEl) {
+        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        modal.hide();
+    }
+    tagInput.value = '';
+}
+
+window.addCustomTagCard = addCustomTagCard;
+
+// 6. 頁面 DOM 載入後初始化
+document.addEventListener('DOMContentLoaded', function() {
+    const todayStr = formatDate(new Date());
+
+    const btnCreate = document.getElementById('btnCreateCustomTag');
+    if (btnCreate) {
+        btnCreate.addEventListener('click', addCustomTagCard);
+    }
+
+    const presetTags = {{ preset_tags | tojson }};
+    presetTags.forEach(function(tagCode) {
+        const chk = document.getElementById('ever_trained_' + tagCode);
+        const endDate = document.getElementById('end_date_' + tagCode);
+        if (chk && chk.checked) {
+            if (endDate && !endDate.value) {
+                endDate.value = todayStr;
+            }
+        }
+        updateCardTitle(tagCode);
     });
 });
-
-function openAddTagModal() {
-    document.getElementById('modalTitle').innerHTML = '<i class="bi bi-plus-circle-fill text-primary me-2"></i>建立精進數位政策指標';
-    document.getElementById('modal_tag_name').value = '';
-    document.getElementById('modal_tag_name').readOnly = false;
-    document.getElementById('patternsContainer').innerHTML = '';
-    addPatternInput(''); 
-    if (tagModalEntity) tagModalEntity.show();
-}
-
-function addPatternInput(value = '') {
-    const container = document.getElementById('patternsContainer');
-    const div = document.createElement('div');
-    div.className = 'input-group input-group-sm mb-2 pattern-item';
-    div.innerHTML = `
-        <span class="input-group-text bg-light"><i class="bi bi-regex"></i></span>
-        <input type="text" name="patterns[]" class="form-control" placeholder="輸入關鍵字或 Regex" value="${value}" required>
-        <button type="button" class="btn btn-outline-danger" onclick="this.parentElement.remove()"><i class="bi bi-dash"></i></button>
-    `;
-    container.appendChild(div);
-}
-
-function openEditTag(tag, patterns) {
-    document.getElementById('modalTitle').innerHTML = '<i class="bi bi-pencil-square text-warning me-2"></i>修改指標關鍵字規則';
-    document.getElementById('modal_tag_name').value = tag;
-    document.getElementById('modal_tag_name').readOnly = true; 
-    const container = document.getElementById('patternsContainer');
-    container.innerHTML = '';
-    patterns.forEach(p => addPatternInput(p));
-    if (tagModalEntity) tagModalEntity.show();
-}
-
-function submitTagRule(e) {
-    e.preventDefault();
-    const form = document.getElementById('tagRuleForm');
-    const formData = new FormData(form);
-    fetch('/api/tags/save', { method: 'POST', body: formData })
-    .then(res => res.json())
-    .then(data => {
-        if (data.error) alert('❌ 失敗：' + data.error);
-        else {
-            if (tagModalEntity) tagModalEntity.hide();
-            alert('✅ ' + data.message);
-            window.location.reload();
-        }
-    });
-}
-
-function deleteTagRule(tag) {
-    if (!confirm(`⚠️ 刪除【${tag}】規則將影響 15,829 筆數據之通過率統計，確定移除？`)) return;
-    fetch(`/api/tags/delete/${tag}`, { method: 'POST' })
-    .then(res => res.json())
-    .then(data => {
-        if (data.error) alert('❌ 刪除失敗');
-        else {
-            document.getElementById(`tag-row-${tag}`).remove();
-            alert('🗑️ 規則已移除');
-        }
-    });
-}
 </script>
 {% endblock %}

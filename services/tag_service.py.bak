@@ -1,0 +1,232 @@
+# services/tag_service.py
+"""
+教育部與各處室政策研習指標關鍵字、日期區間與核算時數檢核服務
+支援：
+1. 關鍵字標籤比對
+2. 「研習過即可」選項自動將日期涵蓋範圍設為 1900-01-01 至 [當前系統日期]
+3. 認證時數必須 > 0 才計入採認人數
+4. 指標架構：
+- 教務處 (AA) : 數位學習基礎、數位學習進階、數位學習講師、資訊安全
+- 輔導室 (SP) : 特殊教育、生命教育、輔導知能、學生輔導、家庭教育 (SP+流水號)
+- 學務處 (SA) : 安全教育、交通安全、防災、性平教育、性別平等、環境教育 (SA+流水號)
+- 總務處 (GA) : 採購法、總務知能 (GA+流水號)
+"""
+# services/tag_service.py
+"""
+教育部與各處室政策研習指標關鍵字、日期區間與核算時數檢核服務
+修復重點：
+1. 補齊 update_rules 類別方法，解決解析匯入時發生的 AttributeError
+2. 自動相容舊版純陣列格式 JSON（如 "A1": ["精進數位.*A1"]）
+"""
+import json
+import os
+from datetime import datetime, date
+
+class TagService:
+    # 預設所有指標清單
+    PRESET_TAGS = [
+        # 教務處
+        'AA1', 'AA2', 'AA3', 'AA4', 'AA5', 'AA6', 'AA7', 'AA8', 'AA9', 
+        'AA10', 'AA11', 'AA12', 'AA13', 'AA14', 'AA15',
+        # 輔導室 (SP)
+        'SP1', 'SP2', 'SP3', 'SP4', 'SP5', 'SP6',
+        # 學務處 (SA)
+        'SA1', 'SA2', 'SA3', 'SA4', 'SA5', 'SA6',
+        # 總務處 (GA)
+        'GA1', 'GA2'
+    ]
+
+    # 各處室分組統計架構
+    DEPARTMENT_GROUPS = {
+        '教務處': ['AA1', 'AA2', 'AA3', 'AA4', 'AA5', 'AA6', 'AA7', 'AA8', 'AA9', 'AA10', 'AA11', 'AA12', 'AA13', 'AA14', 'AA15'],
+        '輔導室': ['SP1', 'SP2', 'SP3', 'SP4', 'SP5', 'SP6'],
+        '學務處': ['SA1', 'SA2', 'SA3', 'SA4', 'SA5', 'SA6'],
+        '總務處': ['GA1', 'GA2']
+    }
+
+    _rules = {}
+
+    @classmethod
+    def init_rules(cls, rules_path):
+        """初始化載入動態標籤規則 JSON"""
+        if os.path.exists(rules_path):
+            try:
+                with open(rules_path, 'r', encoding='utf-8') as f:
+                    cls._rules = json.load(f)
+            except Exception as e:
+                print(f"⚠️ 載入標籤規則 JSON 失敗: {e}")
+                cls._rules = cls._get_default_rules()
+        else:
+            cls._rules = cls._get_default_rules()
+
+    @classmethod
+    def get_rules(cls):
+        """取得當前所有指標規則"""
+        if not cls._rules:
+            cls._rules = cls._get_default_rules()
+        return cls._rules
+
+    @classmethod
+    def update_rules(cls, new_rules, rules_path):
+        """
+        修復關鍵：更新記憶體中的規則並寫入持久化 JSON 設定檔
+        自動相容舊版 list 格式並轉化為包含日期的 dict 結構
+        """
+        try:
+            current_today = date.today().strftime('%Y-%m-%d')
+            normalized_rules = {}
+
+            # 將傳入的新規則進行結構規格化
+            for tag, config in new_rules.items():
+                if isinstance(config, list):
+                    # 舊版純陣列格式 ➔ 自動轉為研習過即可 (1900-01-01 ~ 今日)
+                    normalized_rules[tag] = {
+                        'keywords': config,
+                        'is_ever_trained': True,
+                        'start_date': '1900-01-01',
+                        'end_date': current_today
+                    }
+                elif isinstance(config, dict):
+                    kw_list = config.get('keywords', [])
+                    if isinstance(kw_list, str):
+                        kw_list = [kw_list]
+                    
+                    normalized_rules[tag] = {
+                        'keywords': kw_list,
+                        'is_ever_trained': config.get('is_ever_trained', True),
+                        'start_date': config.get('start_date', '1900-01-01'),
+                        'end_date': config.get('end_date', current_today)
+                    }
+
+            # 1. 更新內部快取
+            cls._rules = normalized_rules
+
+            # 2. 確保目錄存在並寫入 JSON 檔案
+            os.makedirs(os.path.dirname(rules_path), exist_ok=True)
+            with open(rules_path, 'w', encoding='utf-8') as f:
+                json.dump(cls._rules, f, ensure_ascii=False, indent=2)
+
+            return True
+        except Exception as e:
+            print(f"❌ 寫入規則設定檔至 {rules_path} 失敗: {e}")
+            return False
+
+    @classmethod
+    def _get_default_rules(cls):
+        """預設指標規則字典"""
+        current_today = date.today().strftime('%Y-%m-%d')
+        rules = {}
+        
+        aa_base = [
+            ('AA1', ['精進數位', '數位學習基礎', 'A1']),
+            ('AA2', ['精進數位', '數位學習基礎', 'A2']),
+            ('AA3', ['精進數位', '數位學習基礎', 'A3']),
+            ('AA4', ['精進數位', '數位學習基礎', 'B3']),
+            ('AA5', ['精進數位', '數位學習基礎', 'B5-1']),
+        ]
+        aa_advanced = [
+            ('AA6', ['精進數位', '數位學習進階', 'B1']),
+            ('AA7', ['精進數位', '數位學習進階', 'B2']),
+            ('AA8', ['精進數位', '數位學習進階', 'B4']),
+            ('AA9', ['精進數位', '數位學習進階', 'B5-2']),
+        ]
+        aa_lecturer = [
+            ('AA10', ['精進數位', '數位學習講師', 'C']),
+            ('AA11', ['精進數位', '數位學習講師', 'D']),
+            ('AA12', ['精進數位', '數位學習講師', 'E']),
+            ('AA13', ['精進數位', '數位學習講師', 'F1']),
+            ('AA14', ['精進數位', '數位學習講師', 'F2']),
+        ]
+        aa_sec = [('AA15', ['資訊安全', '資安通識'])]
+
+        for tag, kws in aa_base + aa_advanced + aa_lecturer + aa_sec:
+            rules[tag] = {'keywords': kws, 'is_ever_trained': True, 'start_date': '1900-01-01', 'end_date': current_today}
+
+        sp_items = [
+            ('SP1', ['特殊教育']), ('SP2', ['特教知能']), ('SP3', ['生命教育']),
+            ('SP4', ['輔導知能']), ('SP5', ['學生輔導']), ('SP6', ['家庭教育']),
+        ]
+        for tag, kws in sp_items:
+            rules[tag] = {'keywords': kws, 'is_ever_trained': True, 'start_date': '1900-01-01', 'end_date': current_today}
+
+        sa_items = [
+            ('SA1', ['安全教育']), ('SA2', ['交通安全']), ('SA3', ['防災']),
+            ('SA4', ['性平教育']), ('SA5', ['性別平等']), ('SA6', ['環境教育']),
+        ]
+        for tag, kws in sa_items:
+            rules[tag] = {'keywords': kws, 'is_ever_trained': True, 'start_date': '1900-01-01', 'end_date': current_today}
+
+        ga_items = [('GA1', ['採購法']), ('GA2', ['總務知能'])]
+        for tag, kws in ga_items:
+            rules[tag] = {'keywords': kws, 'is_ever_trained': True, 'start_date': '1900-01-01', 'end_date': current_today}
+
+        return rules
+
+    @classmethod
+    def parse_training_name(cls, title, course_date_str=None, hours=0.0):
+        """核心指標檢核邏輯"""
+        matched_tags = []
+        if not title:
+            return matched_tags
+
+        try:
+            h_val = float(hours)
+            if h_val <= 0:
+                return matched_tags
+        except (ValueError, TypeError):
+            return matched_tags
+
+        title_clean = str(title).strip()
+        rules = cls.get_rules()
+
+        c_date = date.today()
+        if course_date_str:
+            try:
+                clean_d_str = str(course_date_str).strip().replace('/', '-').split(' ')[0]
+                c_date = datetime.strptime(clean_d_str, '%Y-%m-%d').date()
+            except Exception:
+                c_date = date.today()
+
+        current_today_str = date.today().strftime('%Y-%m-%d')
+
+        for tag_key, config in rules.items():
+            if isinstance(config, dict):
+                keywords = config.get('keywords', [])
+                is_ever_trained = config.get('is_ever_trained', True)
+                s_date_str_raw = config.get('start_date', '1900-01-01')
+                e_date_str_raw = config.get('end_date', current_today_str)
+            elif isinstance(config, list):
+                keywords = config
+                is_ever_trained = True
+                s_date_str_raw = '1900-01-01'
+                e_date_str_raw = current_today_str
+            else:
+                continue
+
+            if not keywords:
+                continue
+
+            is_keyword_matched = any(kw.lower() in title_clean.lower() for kw in keywords if kw)
+
+            if is_keyword_matched:
+                if is_ever_trained:
+                    s_date_str = "1900-01-01"
+                    e_date_str = current_today_str
+                else:
+                    s_date_str = str(s_date_str_raw).strip() if s_date_str_raw else "1900-01-01"
+                    e_date_str = str(e_date_str_raw).strip() if e_date_str_raw else current_today_str
+
+                try:
+                    s_date = datetime.strptime(s_date_str, '%Y-%m-%d').date()
+                except Exception:
+                    s_date = date(1900, 1, 1)
+
+                try:
+                    e_date = datetime.strptime(e_date_str, '%Y-%m-%d').date()
+                except Exception:
+                    e_date = date.today()
+
+                if s_date <= c_date <= e_date:
+                    matched_tags.append(tag_key)
+
+        return matched_tags

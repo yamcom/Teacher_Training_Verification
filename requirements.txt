@@ -1,12 +1,38 @@
-# 後端網頁框架與資料庫 ORM
-Flask==3.0.3
-Flask-SQLAlchemy==3.1.1
-SQLAlchemy==2.0.31
+# ==========================================
+# 教師研習檢核系統 V2 - 系統套件依賴清單
+# 適用環境：Python 3.12+ (CPU 輕量極速版)
+# ==========================================
 
-# 巨量研習資料分析與試算表處理 (支援 .csv, .xlsx, .xls)
-pandas==2.2.2
-openpyxl==3.1.5
-xlrd==2.0.1
+# 1. 核心 Web 框架、身份驗證與 WSGI 生產環境伺服器
+Flask>=3.0.0
+Flask-SQLAlchemy>=3.1.1
+Flask-Login>=0.6.3
+Flask-Migrate>=4.0.5
+SQLAlchemy>=2.0.0
+waitress>=3.0.0
 
-# 正式公文與報告輸出 (.docx)
-python-docx==1.1.2
+# 2. Pipeline A：大數據洗滌、匯入與 Excel/Word 檔案處理
+pandas>=2.2.0
+openpyxl>=3.1.2
+python-docx>=1.1.0
+
+# 3. Pipeline B：證書解析 (Document & OCR Module)
+PyMuPDF>=1.23.0
+pdfplumber>=0.10.0
+paddlepaddle>=2.6.0
+paddleocr>=2.7.0
+
+# 4. Pipeline B：字詞快速比對與模糊匹配引擎 (Rule Engine)
+RapidFuzz>=3.6.0
+
+# 5. Pipeline B：輕量向量化與混合檢索 (Embedding & Retrieval Module)
+# 採 CPU 友善之 bge-small-zh-v1.5 與 FAISS CPU 索引
+sentence-transformers>=2.2.2
+faiss-cpu>=1.7.4
+
+# 6. Pipeline B：本地 LLM (Ollama) 連線 API (AI Verification Module)
+ollama>=0.1.0
+
+# 7. 輔助開發與環境管理工具
+requests>=2.31.0
+python-dotenv>=1.0.0
