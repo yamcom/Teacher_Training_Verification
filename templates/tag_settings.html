@@ -88,12 +88,17 @@
     <!-- ⚙️ 區塊二：指標關鍵字與日期範圍核心管理 -->
     <!-- ========================================================================= -->
     <div class="card border-0 shadow-lg rounded-3 mb-5">
-        <div class="card-header bg-dark text-white fw-bold py-3 d-flex justify-content-between align-items-center">
+        <div class="card-header bg-dark text-white fw-bold py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
             <div>
                 <i class="bi bi-gear-wide-connected me-2 text-warning"></i> 區塊二：指標關鍵字與日期範圍核心管理
             </div>
-            <!-- 📥 📤 匯入、匯出與【清空所有研習紀錄】控制按鈕 -->
-            <div class="d-flex gap-2">
+            <!-- 🔄 📥 📤 控制按鈕列 -->
+            <div class="d-flex flex-wrap gap-2">
+                <!-- 🔄 重新分析研習紀錄按鈕 -->
+                <button type="button" class="btn btn-warning btn-sm font-weight-bold shadow-sm text-dark" data-bs-toggle="modal" data-bs-target="#reanalyzeModal">
+                    <i class="bi bi-arrow-repeat me-1"></i> 重新分析研習紀錄
+                </button>
+
                 <!-- 🔐 僅限 Admin 角色顯示：【清空所有研習紀錄】控制按鈕 -->
                 {% if current_user.is_authenticated and current_user.role == 'admin' %}
                 <button type="button" class="btn btn-outline-danger btn-sm font-weight-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#clearTrainingsModal">
@@ -102,7 +107,7 @@
                 {% endif %}
 
                 <button type="button" class="btn btn-success btn-sm font-weight-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#importRulesModal">
-                    <i class="bi bi-file-earmark-arrow-up-fill me-1"></i> 匯入設定關鍵字設定檔
+                    <i class="bi bi-file-earmark-arrow-up-fill me-1"></i> 匯入設定檔
                 </button>
                 <a href="{{ url_for('tag.export_rules') }}" class="btn btn-outline-light btn-sm font-weight-bold shadow-sm">
                     <i class="bi bi-file-earmark-arrow-down-fill me-1"></i> 匯出設定檔
@@ -238,7 +243,39 @@
 </div>
 
 
-<!-- 🔐 1. Admin 專屬：【清空所有研習紀錄】二次確認彈出視窗 Modal -->
+<!-- 🔄 1. 重新分析研習紀錄 Modal 對話框 -->
+<div class="modal fade" id="reanalyzeModal" tabindex="-1" aria-labelledby="reanalyzeModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title fw-bold" id="reanalyzeModalLabel">
+            <i class="bi bi-arrow-repeat me-2"></i> 確認重新分析研習紀錄
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="{{ url_for('tag.reanalyze_trainings') }}" method="POST">
+          <div class="modal-body p-4">
+            <div class="alert alert-warning mb-3 small">
+                <i class="bi bi-info-circle-fill me-1"></i>
+                <strong>此操作將根據目前的關鍵字與起訖日期，重新對現存的所有研習紀錄進行標籤採認與比對。</strong>
+            </div>
+            <p class="text-secondary small mb-0">
+                若您剛剛修改了卡片中的關鍵字或日期，請<strong>先點擊頁面底部的「儲存所有指標關鍵字與日期設定」</strong>，再執行本重新分析作業。
+            </p>
+          </div>
+          <div class="modal-footer bg-light">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+            <button type="submit" class="btn btn-warning fw-bold text-dark">
+                <i class="bi bi-play-circle-fill me-1"></i> 開始重新分析
+            </button>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+<!-- 🔐 2. Admin 專屬：【清空所有研習紀錄】二次確認彈出視窗 Modal -->
 {% if current_user.is_authenticated and current_user.role == 'admin' %}
 <div class="modal fade" id="clearTrainingsModal" tabindex="-1" aria-labelledby="clearTrainingsModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
@@ -275,7 +312,7 @@
 {% endif %}
 
 
-<!-- 📥 2. 匯入設定關鍵字設定檔 Modal 對話框 -->
+<!-- 📥 3. 匯入設定關鍵字設定檔 Modal 對話框 -->
 <div class="modal fade" id="importRulesModal" tabindex="-1" aria-labelledby="importRulesModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0 shadow-lg">
@@ -308,7 +345,7 @@
 </div>
 
 
-<!-- ➕ 3. 新增自訂指標 Modal 對話框 -->
+<!-- ➕ 4. 新增自訂指標 Modal 對話框 -->
 <div class="modal fade" id="addCustomTagModal" tabindex="-1" aria-labelledby="addCustomTagModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0 shadow-lg">

@@ -1,0 +1,278 @@
+{
+  "A3": {
+    "keywords": [
+      "精進數位.*A3",
+      "數位A3",
+      "A3數位素養增能研習"
+    ],
+    "is_ever_trained": true,
+    "start_date": "1900-01-01",
+    "end_date": "2026-09-05"
+  },
+  "SA1": {
+    "keywords": [
+      "交通安全",
+      "交通安全"
+    ],
+    "is_ever_trained": false,
+    "start_date": "2025-08-01",
+    "end_date": "2026-09-05"
+  },
+  "E": {
+    "keywords": [
+      "精進數位E",
+      "數位E"
+    ],
+    "is_ever_trained": true,
+    "start_date": "1900-01-01",
+    "end_date": "2026-09-05"
+  },
+  "B4": {
+    "keywords": [
+      "精進數位.*B4",
+      "數位B4"
+    ],
+    "is_ever_trained": true,
+    "start_date": "1900-01-01",
+    "end_date": "2026-09-05"
+  },
+  "B3": {
+    "keywords": [
+      "精進數位.*B3",
+      "數位B3"
+    ],
+    "is_ever_trained": true,
+    "start_date": "1900-01-01",
+    "end_date": "2026-09-05"
+  },
+  "AA01": {
+    "keywords": [
+      "資通安全增能研習",
+      "資通安全3HR/Y"
+    ],
+    "is_ever_trained": false,
+    "start_date": "2026-01-01",
+    "end_date": "2026-12-31"
+  },
+  "C": {
+    "keywords": [
+      "精進數位C",
+      "數位C"
+    ],
+    "is_ever_trained": true,
+    "start_date": "1900-01-01",
+    "end_date": "2026-09-05"
+  },
+  "GA1": {
+    "keywords": [
+      "採購人員",
+      "採購法"
+    ],
+    "is_ever_trained": true,
+    "start_date": "1900-01-01",
+    "end_date": "2026-09-05"
+  },
+  "GA2": {
+    "keywords": [],
+    "is_ever_trained": true,
+    "start_date": "1900-01-01",
+    "end_date": "2026-09-05"
+  },
+  "B2": {
+    "keywords": [
+      "精進數位.*B2",
+      "數位B2"
+    ],
+    "is_ever_trained": true,
+    "start_date": "1900-01-01",
+    "end_date": "2026-09-05"
+  },
+  "SP1": {
+    "keywords": [
+      "特教知能",
+      "特殊教育"
+    ],
+    "is_ever_trained": false,
+    "start_date": "2025-08-01",
+    "end_date": "2026-09-05"
+  },
+  "SA5": {
+    "keywords": [],
+    "is_ever_trained": true,
+    "start_date": "1900-01-01",
+    "end_date": "2026-09-05"
+  },
+  "B1": {
+    "keywords": [
+      "精進數位.*B1",
+      "數位B1"
+    ],
+    "is_ever_trained": true,
+    "start_date": "1900-01-01",
+    "end_date": "2026-09-05"
+  },
+  "SA4": {
+    "keywords": [
+      "CPR",
+      "心肺復甦",
+      "AED"
+    ],
+    "is_ever_trained": false,
+    "start_date": "2025-08-01",
+    "end_date": "2026-09-05"
+  },
+  "SA3": {
+    "keywords": [
+      "環境教育",
+      "環境教育"
+    ],
+    "is_ever_trained": false,
+    "start_date": "2025-08-01",
+    "end_date": "2026-09-05"
+  },
+  "F2": {
+    "keywords": [
+      "精進數位F2",
+      "數位F2"
+    ],
+    "is_ever_trained": true,
+    "start_date": "1900-01-01",
+    "end_date": "2026-09-05"
+  },
+  "SP4": {
+    "keywords": [
+      "家庭教育",
+      "家庭教育"
+    ],
+    "is_ever_trained": false,
+    "start_date": "2025-08-01",
+    "end_date": "2026-09-05"
+  },
+  "SA2": {
+    "keywords": [
+      "性別平等",
+      "性別平等"
+    ],
+    "is_ever_trained": false,
+    "start_date": "2025-08-01",
+    "end_date": "2026-09-05"
+  },
+  "SA6": {
+    "keywords": [],
+    "is_ever_trained": true,
+    "start_date": "1900-01-01",
+    "end_date": "2026-09-05"
+  },
+  "AA02": {
+    "keywords": [
+      "教學輔導教師增能專修",
+      "教學輔導教師"
+    ],
+    "is_ever_trained": true,
+    "start_date": "1900-01-01",
+    "end_date": "2026-09-05"
+  },
+  "B5-2": {
+    "keywords": [
+      "精進數位.*B5-2",
+      "數位B5-2",
+      "數位學習增能─B5-2"
+    ],
+    "is_ever_trained": true,
+    "start_date": "1900-01-01",
+    "end_date": "2026-09-05"
+  },
+  "AA03": {
+    "keywords": [
+      "個資",
+      "個人資料保護"
+    ],
+    "is_ever_trained": true,
+    "start_date": "1900-01-01",
+    "end_date": "2026-09-05"
+  },
+  "SP5": {
+    "keywords": [],
+    "is_ever_trained": true,
+    "start_date": "1900-01-01",
+    "end_date": "2026-09-05"
+  },
+  "D": {
+    "keywords": [
+      "精進數位D",
+      "數位D"
+    ],
+    "is_ever_trained": true,
+    "start_date": "1900-01-01",
+    "end_date": "2026-09-05"
+  },
+  "SP2": {
+    "keywords": [
+      "生命教育",
+      "生命教育"
+    ],
+    "is_ever_trained": false,
+    "start_date": "2025-08-01",
+    "end_date": "2026-09-05"
+  },
+  "A2": {
+    "keywords": [
+      "精進數位.*A2",
+      "數位A2",
+      "A2數位學習工作坊[（(]二[）)]",
+      "A2數位學習",
+      "數位學習工作坊A2",
+      "各級學校初任教師研習班"
+    ],
+    "is_ever_trained": true,
+    "start_date": "1900-01-01",
+    "end_date": "2026-09-05"
+  },
+  "F1": {
+    "keywords": [
+      "精進數位F1",
+      "數位F1"
+    ],
+    "is_ever_trained": true,
+    "start_date": "1900-01-01",
+    "end_date": "2026-09-05"
+  },
+  "SP6": {
+    "keywords": [],
+    "is_ever_trained": true,
+    "start_date": "1900-01-01",
+    "end_date": "2026-09-05"
+  },
+  "SP3": {
+    "keywords": [
+      "輔導知能",
+      "輔導知能"
+    ],
+    "is_ever_trained": false,
+    "start_date": "2025-08-01",
+    "end_date": "2026-09-05"
+  },
+  "A1": {
+    "keywords": [
+      "精進數位.*A1",
+      "數位A1",
+      "A1數位學習工作坊[（(]一[）)]",
+      "A1數位學習",
+      "數位學習工作坊A1",
+      "各級學校初任教師研習班"
+    ],
+    "is_ever_trained": true,
+    "start_date": "1900-01-01",
+    "end_date": "2026-09-05"
+  },
+  "B5-1": {
+    "keywords": [
+      "精進數位.*B5-1",
+      "數位B5-1",
+      "數位學習增能─B5-1"
+    ],
+    "is_ever_trained": true,
+    "start_date": "1900-01-01",
+    "end_date": "2026-09-05"
+  }
+}

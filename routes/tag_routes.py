@@ -7,6 +7,7 @@
 3. 舊版純陣列 JSON 自動相容轉化
 4. 傳遞完整的 preset_tags 給前端樣板，確保新增的指標在儲存後仍能正確渲染
 5. 清空所有研習紀錄 API (/tags/clear-trainings，僅限 Admin，需驗證密碼)
+6. 重新分析研習紀錄 API (/tags/reanalyze，依據最新關鍵字與日期重算 matched_tags)
 """
 import json
 import io
@@ -16,6 +17,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from werkzeug.security import check_password_hash
 from services.tag_service import TagService
+from models import db, TrainingRecord, Training
 
 tag_bp = Blueprint('tag', __name__, url_prefix='/tags')
 
@@ -94,7 +96,66 @@ def tag_settings_page():
 
 
 # =========================================================================
-# 🚨 2. 清空所有研習紀錄 API (/tags/clear-trainings)
+# 🔄 2. 重新分析資料庫研習紀錄 API (/tags/reanalyze)
+# =========================================================================
+@tag_bp.route('/reanalyze', methods=['POST'])
+@login_required
+def reanalyze_trainings():
+    """根據現行最新關鍵字與日期設定，重新掃描並更新資料庫研習紀錄的 matched_tags"""
+    try:
+        # 重新載入記憶體規則，確保套用最新設定檔
+        TagService.init_rules(current_app.config["DYNAMIC_TAG_RULES_PATH"])
+
+        # 批次查詢所有研習採認紀錄並關聯課程主檔
+        records = db.session.query(TrainingRecord, Training).join(
+            Training, TrainingRecord.training_id == Training.id
+        ).all()
+
+        if not records:
+            flash("目前資料庫中尚無任何研習紀錄可供分析！", "info")
+            return redirect(url_for('tag.tag_settings_page'))
+
+        updated_count = 0
+        tag_match_count = 0
+
+        for record, training in records:
+            title = training.title or ""
+            course_date = str(training.course_date).strip() if training.course_date else ""
+            
+            # 取得時數欄位
+            hours_val = getattr(record, 'hours', None) or getattr(record, 'certified_hours', None)
+            if hours_val is None:
+                hours_val = getattr(training, 'hours', None) or getattr(training, 'course_hours', None) or getattr(training, 'duration', 0.0)
+
+            # 依據最新規則重新解析匹配標籤
+            matched_tags_list = TagService.parse_training_name(title, course_date, hours_val)
+            new_tags_str = ",".join(matched_tags_list) if matched_tags_list else None
+
+            # 若標籤發生變更則更新欄位
+            if record.matched_tags != new_tags_str:
+                record.matched_tags = new_tags_str
+                record.updated_at = datetime.now()
+                updated_count += 1
+
+            if new_tags_str:
+                tag_match_count += 1
+
+        db.session.commit()
+        flash(
+            f"研習紀錄重新分析完成！共掃描 {len(records)} 筆紀錄，"
+            f"更新了 {updated_count} 筆紀錄的指標標籤（現有 {tag_match_count} 筆符合政策指標）。",
+            "success"
+        )
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ 重新分析研習紀錄失敗: {e}")
+        flash(f"重新分析時發生錯誤: {str(e)}", "danger")
+
+    return redirect(url_for('tag.tag_settings_page'))
+
+
+# =========================================================================
+# 🚨 3. 清空所有研習紀錄 API (/tags/clear-trainings)
 # =========================================================================
 @tag_bp.route('/clear-trainings', methods=['POST'])
 @login_required
@@ -112,8 +173,6 @@ def clear_trainings():
         return redirect(url_for('tag.tag_settings_page'))
 
     try:
-        from models import db, TrainingRecord, Training
-        
         # 3. 刪除所有研習採認紀錄 TrainingRecord 與課程主檔 Training
         num_records = TrainingRecord.query.delete()
         num_trainings = Training.query.delete()
@@ -134,7 +193,7 @@ def clear_trainings():
 
 
 # =========================================================================
-# 📤 3. 匯出現行設定檔 API (/tags/export)
+# 📤 4. 匯出現行設定檔 API (/tags/export)
 # =========================================================================
 @tag_bp.route('/export', methods=['GET'])
 @login_required
@@ -158,7 +217,7 @@ def export_rules():
 
 
 # =========================================================================
-# 📥 4. 批次匯入關鍵字設定檔 API (/tags/import)
+# 📥 5. 批次匯入關鍵字設定檔 API (/tags/import)
 # =========================================================================
 @tag_bp.route('/import', methods=['POST'])
 @login_required
