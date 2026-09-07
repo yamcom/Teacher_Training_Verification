@@ -1,135 +1,307 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
-{% block title %}3.5 教師研習查詢 - {{ system_name }}{% endblock %}
+{% block title %}3.5 教師研習綜合查詢與檢核 - {{ system_name }}{% endblock %}
 
 {% block content %}
+<!-- 🖨️ 友善列印專用樣式 -->
+<style>
+@media print {
+    /* 隱藏側邊欄、主導覽列、搜尋面板、按鈕列、分頁導覽與未勾選顯示元素 */
+    .sidebar, .navbar, nav, footer, #searchCard, .action-buttons, .pagination-container, .btn, .no-print {
+        display: none !important;
+    }
+    body {
+        background-color: #fff !important;
+        font-size: 11pt;
+        color: #000 !important;
+    }
+    .container-fluid {
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+    }
+    .card-header {
+        display: none !important;
+    }
+    /* 列印專用報表抬頭 */
+    .print-header {
+        display: block !important;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    /* 強化列印表格線條與跨頁控制 */
+    table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+    }
+    th, td {
+        border: 1px solid #333 !important;
+        padding: 6px 8px !important;
+        color: #000 !important;
+    }
+    thead {
+        display: table-header-group;
+    }
+    tr {
+        page-break-inside: avoid;
+    }
+    /* 列印時排除非必要欄位 (職稱、採認狀態、人工審核) */
+    .col-position, .col-status, .col-audit {
+        display: none !important;
+    }
+    /* 列印目標必備欄位 (教師姓名、研習課程名稱及課程結束日期、核算時數、匹配政策標籤) */
+    .col-print-target {
+        display: table-cell !important;
+    }
+}
+.print-header {
+    display: none;
+}
+</style>
+
 <div class="container-fluid py-4">
-    <!-- 頁面標題區 -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="h3 font-weight-bold text-gray-800 mb-1">
-                <i class="bi bi-search text-primary"></i> 3.5 教師研習綜合查詢與檢核
-            </h2>
-            <p class="text-muted small mb-0">提供全校教師研習紀錄、政策標籤匹配結果與人工勾選採認</p>
+
+    <!-- 🖨️ 列印專用報表抬頭 -->
+    <div class="print-header">
+        <h3 class="fw-bold mb-1">{{ system_name }}</h3>
+        <h4>教師研習查詢與檢核結果明細表</h4>
+        <div class="text-muted small">
+            查詢條件：
+            {% if teacher_name %}教師姓名：{{ teacher_name }} ｜ {% endif %}
+            {% if course_keyword %}研習名稱關鍵字：{{ course_keyword }} ｜ {% endif %}
+            {% if selected_tag %}政策指標：{{ selected_tag }} ({{ tag_display_names.get(selected_tag, '') }}) ｜ {% endif %}
+            列印時間：<span id="printTimestamp"></span>
         </div>
     </div>
 
-    <!-- Flash 訊息 -->
+    <!-- 頁面頂部主標題與列印按鈕 -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-2 border-bottom no-print">
+        <div>
+            <h2 class="h3 font-weight-bold text-gray-800 mb-1">
+                <i class="bi bi-search-heart-fill text-primary me-2"></i> 3.5 教師研習綜合查詢與檢核
+            </h2>
+            <p class="text-muted small mb-0">檢核課程結束日期、核算時數與政策指標匹配結果，支援友善列印報表</p>
+        </div>
+        <div class="mt-3 mt-md-0 d-flex gap-2">
+            <!-- 🖨️ 友善列印查詢結果按鈕 -->
+            <button type="button" class="btn btn-outline-dark fw-bold shadow-sm" onclick="triggerFriendlyPrint()">
+                <i class="bi bi-printer-fill me-1"></i> 友善列印查詢結果
+            </button>
+        </div>
+    </div>
+
+    <!-- Flash 訊息提示 -->
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         {% for category, message in messages %}
-          <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm mb-4" role="alert">
-             {{ message }}
+          <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm mb-4 no-print" role="alert">
+             <i class="bi bi-info-circle-fill me-2"></i> {{ message }}
              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
           </div>
         {% endfor %}
       {% endif %}
     {% endwith %}
 
-    <!-- 🔍 複合式條件搜尋卡片 -->
-    <div class="card border-0 shadow-sm rounded-3 mb-4">
-        <div class="card-body p-3">
-            <form action="{{ url_for('training.list_trainings') }}" method="GET" class="row g-2 align-items-center">
-                <!-- 關鍵字搜尋 -->
+    <!-- 🔍 檢索過濾卡片 -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4 no-print" id="searchCard">
+        <div class="card-body p-3 bg-light rounded-3 border">
+            <form method="GET" action="{{ url_for('training.list_trainings') }}" class="row g-3 align-items-end" id="filterForm">
+                <div class="col-md-3">
+                    <label for="teacher_name" class="form-label small fw-bold text-dark">教師姓名</label>
+                    <input type="text" class="form-control form-control-sm" id="teacher_name" name="teacher_name" value="{{ teacher_name }}" placeholder="請輸入姓名關鍵字...">
+                </div>
+
                 <div class="col-md-4">
-                    <input type="text" class="form-control" name="keyword" placeholder="搜尋姓名、職務或研習名稱..." value="{{ search_keyword or '' }}">
+                    <label for="course_keyword" class="form-label small fw-bold text-dark">研習課程名稱</label>
+                    <input type="text" class="form-control form-control-sm" id="course_keyword" name="course_keyword" value="{{ course_keyword }}" placeholder="請輸入研習名稱關鍵字...">
                 </div>
-                <!-- 政策標籤選單 -->
+
+                <!-- 💡 動態載入所有政策標籤 -->
                 <div class="col-md-3">
-                    <select class="form-select" name="tag">
-                        <option value="">-- 所有政策標籤 (A1~E) --</option>
-                        {% for tag in preset_tags %}
-                            <option value="{{ tag }}" {% if selected_tag == tag %}selected{% endif %}>指標 {{ tag }}</option>
+                    <label for="selected_tag" class="form-label small fw-bold text-dark">所有政策標籤 (動態同步)</label>
+                    <select class="form-select form-select-sm" id="selected_tag" name="selected_tag">
+                        <option value="">-- 全部指標標籤 --</option>
+                        {% for tag in all_tags %}
+                            {% set d_name = tag_display_names.get(tag, tag) %}
+                            <option value="{{ tag }}" {% if selected_tag == tag %}selected{% endif %}>
+                                {{ tag }} - {{ d_name }}
+                            </option>
                         {% endfor %}
                     </select>
                 </div>
-                <!-- 教師選擇選單 -->
-                <div class="col-md-3">
-                    <select class="form-select" name="teacher_id">
-                        <option value="">-- 全校所有教師 --</option>
-                        {% for t in teachers %}
-                            <option value="{{ t.id }}" {% if selected_teacher_id == t.id %}selected{% endif %}>{{ t.position }} - {{ t.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <!-- 按鈕區 -->
+
                 <div class="col-md-2 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i> 搜尋</button>
-                    <a href="{{ url_for('training.list_trainings') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-counterclockwise"></i></a>
+                    <button type="submit" class="btn btn-primary btn-sm fw-bold w-100">
+                        <i class="bi bi-filter me-1"></i> 查詢
+                    </button>
+                    <a href="{{ url_for('training.list_trainings') }}" class="btn btn-outline-secondary btn-sm">
+                        重設
+                    </a>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- 📋 研習紀錄資料表格 -->
-    <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+    <!-- 📊 研習紀錄清單表格 -->
+    <div class="card border-0 shadow-sm rounded-3">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+                <table class="table table-hover table-striped align-middle mb-0" id="trainingsTable">
                     <thead class="table-light">
                         <tr>
-                            <th class="ps-3" style="width: 100px;">職稱</th>
-                            <th style="width: 100px;">教師姓名</th>
-                            <th>研習課程名稱</th>
-                            <th style="width: 100px;">核算時數</th>
-                            <th style="width: 120px;">匹配政策標籤</th>
-                            <th style="width: 110px;">採認狀態</th>
-                            <th class="text-end pe-3" style="width: 120px;">人工勾選審核</th>
+                            <th class="text-center col-position" style="width: 110px;">職稱</th>
+                            <th class="col-print-target" style="width: 110px;">教師姓名</th>
+                            <th class="col-print-target">研習課程名稱及課程結束日期</th>
+                            <th class="text-center col-print-target" style="width: 100px;">核算時數</th>
+                            <th class="col-print-target">匹配政策標籤名稱</th>
+                            <th class="text-center col-status" style="width: 90px;">採認狀態</th>
+                            <th class="text-center col-audit" style="width: 100px;">人工審核</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% if records %}
-                            {% for r in records %}
+                            {% for record, teacher, training in records %}
+                            {% set hours = record.hours if record.hours is defined and record.hours is not none else (record.certified_hours if record.certified_hours is defined and record.certified_hours is not none else (training.hours or 0.0)) %}
+                            {% set raw_end_date = training.end_date or training.course_date or '' %}
+                            {% set display_end_date = (raw_end_date | string).split(' ')[0] if raw_end_date else '未註明日期' %}
                             <tr>
-                                <td class="ps-3 text-secondary small">{{ r.teacher.position if r.teacher else '-' }}</td>
-                                <td class="fw-bold">{{ r.teacher.name if r.teacher else '未知教師' }}</td>
-                                <td>
-                                    <div class="fw-normal text-dark">{{ r.training.title if r.training else '無課程名稱' }}</div>
-                                    <div class="text-muted small">代碼: {{ r.training.course_code if r.training else '-' }}</div>
+                                <!-- 1. 職稱 (列印時隱藏) -->
+                                <td class="text-center text-muted small col-position">{{ teacher.position }}</td>
+
+                                <!-- 2. 教師姓名 (列印包含) -->
+                                <td class="fw-bold text-dark col-print-target">{{ teacher.name }}</td>
+
+                                <!-- 3. 研習課程名稱及課程結束日期 (YYYY-MM-DD) (列印包含) -->
+                                <td class="col-print-target">
+                                    <div class="fw-bold text-primary">{{ training.title }}</div>
+                                    <div class="text-muted small">
+                                        <i class="bi bi-calendar2-check me-1 text-success"></i>
+                                        課程結束日期：<strong>{{ display_end_date }}</strong>
+                                        {% if training.start_date and (training.start_date | string).split(' ')[0] != display_end_date %}
+                                        <span class="text-secondary ms-1 no-print">(開始：{{ (training.start_date | string).split(' ')[0] }})</span>
+                                        {% endif %}
+                                        {% if training.course_code %}
+                                        <span class="badge bg-light text-secondary border ms-1 no-print">代碼: {{ training.course_code }}</span>
+                                        {% endif %}
+                                    </div>
                                 </td>
-                                <td><span class="badge bg-info text-dark">{{ r.hours }} 小時</span></td>
-                                <td>
-                                    {% if r.matched_tags %}
-                                        {% for tag in r.matched_tags.split(',') %}
-                                            <span class="badge bg-primary me-1">{{ tag }}</span>
+
+                                <!-- 4. 核算時數 (列印包含) -->
+                                <td class="text-center fw-bold text-secondary col-print-target">{{ hours }}</td>
+
+                                <!-- 5. 匹配政策標籤名稱 (列印包含) -->
+                                <td class="col-print-target">
+                                    {% if record.matched_tags %}
+                                        {% for t in record.matched_tags.split(',') %}
+                                            {% set clean_t = t.strip() %}
+                                            {% if clean_t %}
+                                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 me-1 mb-1">
+                                                    <strong>{{ clean_t }}</strong> {{ tag_display_names.get(clean_t, '') }}
+                                                </span>
+                                            {% endif %}
                                         {% endfor %}
                                     {% else %}
-                                        <span class="text-muted small">-</span>
+                                        <span class="text-muted small">無匹配標籤</span>
                                     {% endif %}
                                 </td>
-                                <td>
-                                    <!-- 修正點：改用 r.passed 而非 r.is_passed -->
-                                    {% if r.passed %}
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-check-circle-fill me-1"></i>已通過</span>
+
+                                <!-- 6. 採認狀態 (列印時隱藏) -->
+                                <td class="text-center col-status">
+                                    {% if record.passed %}
+                                        <span class="badge bg-success-subtle text-success border border-success">已通過</span>
                                     {% else %}
-                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="bi bi-x-circle-fill me-1"></i>未採認</span>
+                                        <span class="badge bg-danger-subtle text-danger border border-danger">待補件</span>
                                     {% endif %}
                                 </td>
-                                <td class="text-end pe-3">
-                                    {% if current_user.is_authenticated %}
-                                        <form action="{{ url_for('training.toggle_pass', record_id=r.id) }}" method="POST" class="d-inline">
-                                            <button type="submit" class="btn btn-sm {% if r.passed %}btn-outline-danger{% else %}btn-outline-success{% endif %}">
-                                                {% if r.passed %}取消採認{% else %}勾選通過{% endif %}
-                                            </button>
-                                        </form>
-                                    {% else %}
-                                        <span class="text-muted small" title="需登入承辦人帳號">唯讀</span>
-                                    {% endif %}
+
+                                <!-- 7. 人工勾選審核 (列印時隱藏) -->
+                                <td class="text-center col-audit">
+                                    <div class="form-check form-switch d-inline-block">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="auditSwitch_{{ record.id }}" {% if record.passed %}checked{% endif %} onchange="toggleAuditStatus('{{ record.id }}', this.checked)">
+                                    </div>
                                 </td>
                             </tr>
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td colspan="7" class="text-center py-5 text-muted">
-                                    <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
-                                    查無符合條件之教師研習紀錄
-                                </td>
+                                <td colspan="7" class="text-center text-muted py-4">查無符合條件的研習紀錄資料。</td>
                             </tr>
                         {% endif %}
                     </tbody>
                 </table>
             </div>
         </div>
+
+        <!-- 分頁導覽列 (列印時隱藏) -->
+        {% if pagination and pagination.pages > 1 %}
+        <div class="card-footer bg-white border-top py-3 d-flex justify-content-between align-items-center pagination-container no-print">
+            <span class="text-muted small">
+                顯示第 {{ pagination.first }} 至 {{ pagination.last }} 筆，共 {{ pagination.total }} 筆
+            </span>
+            <nav aria-label="Page navigation">
+                <ul class="pagination pagination-sm mb-0">
+                    {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('training.list_trainings', page=pagination.prev_num, teacher_name=teacher_name, course_keyword=course_keyword, selected_tag=selected_tag) }}">上一頁</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for p in pagination.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=2) %}
+                        {% if p %}
+                            <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('training.list_trainings', page=p, teacher_name=teacher_name, course_keyword=course_keyword, selected_tag=selected_tag) }}">{{ p }}</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">…</span></li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('training.list_trainings', page=pagination.next_num, teacher_name=teacher_name, course_keyword=course_keyword, selected_tag=selected_tag) }}">下一頁</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
     </div>
+
 </div>
+
+<!-- JavaScript 邏輯 -->
+<script>
+// 1. 人工審核切換 AJAX
+function toggleAuditStatus(recordId, isPassed) {
+    fetch(`/trainings/audit/${recordId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ passed: isPassed })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.success) {
+            alert('更新審核狀態失敗：' + (data.message || '請重新操作'));
+            location.reload();
+        }
+    })
+    .catch(err => {
+        console.error('Audit Error:', err);
+    });
+}
+
+// 2. 觸發友善列印
+function triggerFriendlyPrint() {
+    const now = new Date();
+    const timestampStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    const stampEl = document.getElementById('printTimestamp');
+    if (stampEl) stampEl.textContent = timestampStr;
+
+    window.print();
+}
+</script>
 {% endblock %}

@@ -66,7 +66,6 @@ class Teacher(db.Model):
         cascade='all, delete-orphan'
     )
 
-    # 💡 解決 'Teacher' object has no attribute 'records' 的動態別名屬性
     @property
     def records(self):
         """相容舊版/統計服務存取 teacher.records"""
@@ -87,7 +86,11 @@ class Training(db.Model):
     course_code = db.Column(db.String(100), unique=True, nullable=False, index=True) # 教育部/進修網課程代碼
     title = db.Column(db.Text, nullable=False)                                         # 完整研習名稱
     organizer = db.Column(db.String(150), nullable=True)                               # 主辦單位
-    course_date = db.Column(db.String(50), nullable=True)                              # 研習辦理日期
+    course_date = db.Column(db.String(50), nullable=True)                              # 研習基準辦理日期 (通常同結束日期)
+    
+    # 💡 新增：明確記錄「課程開始時間」與「課程結束時間」
+    start_date = db.Column(db.String(50), nullable=True)                               # 課程開始時間 (YYYY-MM-DD)
+    end_date = db.Column(db.String(50), nullable=True)                                 # 課程結束時間 (YYYY-MM-DD)
     
     # 處室研習分類鍵 (用於對應 Config.NAS_SPECIFIC_PATHS)
     category_key = db.Column(db.String(50), nullable=True, default='general')

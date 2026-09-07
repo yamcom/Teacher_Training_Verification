@@ -2,16 +2,18 @@
 """
 教師研習檢核與統計管理系統 (TTVS) V2 - 名冊匯入/匯出模組
 更新重點：
-1. 3.2 研習紀錄大數據 CSV / Excel 批次解析 API(含研習名稱CSV檔案的逗號防呆修復機制)
-   - 帶入研習名稱、研習日期與實核時數（核算時數必須 > 0）
+1. 3.2 研習紀錄大數據 CSV / Excel 批次解析 API (含研習名稱逗號防呆修復機制)
+   - 同時解析「課程開始時間」與「課程結束時間」，並分別寫入 start_date, end_date 與 course_date
+   - 帶入研習名稱、研習結束日期與實核時數（核算時數必須 > 0）
    - 僅採認已登錄於 3.1 名冊內之教師
-   - 呼叫 TagService 進行關鍵字與學年度日期起訖（支援「研習過即可」）雙重採認
-   - 匯出目前系統研習紀錄 CSV API (/import/export-trainings)
-2. 3.1 教師名冊 CSV / Excel 批次解析 API (保證回傳純 JSON)
+   - 呼叫 TagService 進行關鍵字與學年度日期起訖採認
+2. 3.2 匯出目前系統研習紀錄 CSV API (/import/export-trainings)
+3. 3.1 教師名冊 CSV / Excel 批次解析 API
 """
 import io
 import csv
 import hashlib
+import re
 import pandas as pd
 from datetime import datetime, date
 from flask import Blueprint, request, jsonify, render_template, Response
@@ -20,6 +22,19 @@ from models import db, Teacher, Training, TrainingRecord
 from services.tag_service import TagService
 
 import_bp = Blueprint('import', __name__, url_prefix='/import')
+
+
+def clean_date_str(val):
+    """將字串清洗為標準 YYYY-MM-DD 格式，若無法辨識則返回乾淨字串"""
+    if not val:
+        return ""
+    val_str = str(val).strip().replace('/', '-')
+    # 擷取 YYYY-MM-DD
+    match = re.search(r'(\d{4}-\d{1,2}-\d{1,2})', val_str)
+    if match:
+        parts = match.group(1).split('-')
+        return f"{parts[0]}-{int(parts[1]):02d}-{int(parts[2]):02d}"
+    return val_str.split(' ')[0]
 
 
 # =========================================================================
@@ -41,7 +56,6 @@ def import_page():
 def export_trainings():
     """匯出資料庫中現有的研習紀錄為符合要求的 CSV 檔案"""
     try:
-        # 聯集查詢 TrainingRecord, Teacher, Training
         results = db.session.query(
             TrainingRecord, Teacher, Training
         ).join(
@@ -51,11 +65,9 @@ def export_trainings():
         ).order_by(TrainingRecord.id.asc()).all()
 
         output = io.StringIO()
-        # 寫入 UTF-8-BOM 以確保 Excel 開啟時繁體中文不亂碼
-        output.write('\ufeff')
+        output.write('\ufeff')  # UTF-8-BOM
         writer = csv.writer(output)
 
-        # 寫入指定欄位標頭
         headers = [
             "編號", "教師姓名", "課程代碼", "研習課程名稱", 
             "依據文號", "課程開始時間", "課程結束時間", "主辦單位", "實核時數/學分數"
@@ -63,22 +75,23 @@ def export_trainings():
         writer.writerow(headers)
 
         for index, (record, teacher, training) in enumerate(results, start=1):
-            # 取時數
             hours_val = getattr(record, 'hours', None) or getattr(record, 'certified_hours', None)
             if hours_val is None:
                 hours_val = getattr(training, 'hours', None) or getattr(training, 'course_hours', None) or getattr(training, 'duration', 0.0)
 
-            # 組成一筆橫列資料
+            start_date_str = getattr(training, 'start_date', '') or training.course_date or ""
+            end_date_str = getattr(training, 'end_date', '') or training.course_date or ""
+
             row = [
-                index,                                                # 編號
-                teacher.name if teacher else "",                      # 教師姓名
-                training.course_code if training else "",             # 課程代碼
-                training.title if training else "",                   # 研習課程名稱
-                getattr(training, 'doc_number', '') or getattr(training, 'organizer', ''), # 依據文號
-                training.course_date if training else "",             # 課程開始時間
-                training.course_date if training else "",             # 課程結束時間
-                getattr(training, 'organizer', '') if training else "",# 主辦單位
-                hours_val                                             # 實核時數/學分數
+                index,
+                teacher.name if teacher else "",
+                training.course_code if training else "",
+                training.title if training else "",
+                getattr(training, 'doc_number', '') or getattr(training, 'organizer', ''),
+                start_date_str,
+                end_date_str,
+                getattr(training, 'organizer', '') if training else "",
+                hours_val
             ]
             writer.writerow(row)
 
@@ -97,11 +110,11 @@ def export_trainings():
 
 
 # =========================================================================
-# 📥 3. 批量匯入研習紀錄 API (/import/trainings) - 含逗號防呆機制
+# 📥 3. 批量匯入研習紀錄 API (/import/trainings)
 # =========================================================================
 @import_bp.route('/trainings', methods=['POST'])
 def import_trainings():
-    """處理 3.2 批量匯入研習紀錄：依據 3.1 名冊過濾，帶入時數與日期進行指標採認"""
+    """處理 3.2 批量匯入研習紀錄：依據 3.1 名冊過濾，帶入時數與真實起訖日期進行指標採認"""
     if not current_user.is_authenticated:
         return jsonify({'error': '請先登入承辦人帳號再進行匯入！'}), 401
 
@@ -120,29 +133,35 @@ def import_trainings():
             content = file.stream.read().decode('utf-8-sig', errors='ignore')
             stream = io.StringIO(content, newline=None)
             
-            # 第一層防護：使用標準 csv.reader 解析（相容用雙引號包覆逗號的 CSV）
             raw_reader = list(csv.reader(stream))
             if not raw_reader:
                 return jsonify({'error': '上傳的 CSV 檔案內容為空！'}), 400
 
             headers = [h.strip() for h in raw_reader[0]]
 
-            # 解析資料行
             for row_idx, row in enumerate(raw_reader[1:], start=2):
                 if not row or not any(row):
                     continue
 
-                # 💡 第二層防護：智慧預處理校正機制
-                # 標準預期欄位應為 9 欄（編號, 教師姓名, 課程代碼, 研習課程名稱, 依據文號, 課程開始時間, 課程結束時間, 主辦單位, 實核時數）
+                # 智慧欄位融合修復：處理研習名稱內含逗號導致列爆開的問題
                 if len(row) > 9:
                     extra_cols = len(row) - 9
-                    # 研習名稱通常位於 index 3，將被逗號拆散的研習名稱進行重新拼接還原
                     fixed_title = ",".join(row[3: 4 + extra_cols])
-                    # 重組為標準 9 欄結構
                     row = row[:3] + [fixed_title] + row[4 + extra_cols:]
 
-                # 轉為字典與標頭對照
                 clean_r = {}
+                # 1. 優先使用既有位置索引填入預設鍵值（對應標準 9 欄順序）
+                # [編號, 教師姓名, 課程代碼, 研習課程名稱, 依據文號, 課程開始時間, 課程結束時間, 主辦單位, 實核時數/學分數]
+                if len(row) >= 7:
+                    clean_r['__std_teacher_name__'] = str(row[1]).strip()
+                    clean_r['__std_course_code__'] = str(row[2]).strip()
+                    clean_r['__std_title__'] = str(row[3]).strip()
+                    clean_r['__std_start_date__'] = str(row[5]).strip()
+                    clean_r['__std_end_date__'] = str(row[6]).strip()
+                if len(row) >= 9:
+                    clean_r['__std_hours__'] = str(row[8]).strip()
+
+                # 2. 標頭鍵值對應
                 for idx, val in enumerate(row):
                     key_name = headers[idx] if idx < len(headers) else f"col_{idx}"
                     clean_r[key_name.strip()] = str(val).strip()
@@ -150,7 +169,6 @@ def import_trainings():
                 rows.append(clean_r)
 
         else:
-            # Excel 格式讀取處理 (.xlsx / .xls)
             excel_file = pd.ExcelFile(file.stream)
             sheet_name = excel_file.sheet_names[0]
             for name in excel_file.sheet_names:
@@ -172,31 +190,37 @@ def import_trainings():
         skipped_invalid = 0
 
         for index, clean_row in enumerate(rows, start=1):
-            teacher_name = None
-            title = None
-            course_code = ""
-            course_date = ""
-            hours_str = None
+            teacher_name = clean_row.get('__std_teacher_name__')
+            title = clean_row.get('__std_title__')
+            course_code = clean_row.get('__std_course_code__', "")
+            start_date_val = clean_row.get('__std_start_date__', "")
+            end_date_val = clean_row.get('__std_end_date__', "")
+            hours_str = clean_row.get('__std_hours__')
             organizer = ""
 
+            # 針對動態標頭逐欄比對校正
             for key, val in clean_row.items():
+                if key.startswith('__std_'):
+                    continue
                 k_clean = str(key).replace(' ', '').replace(' ', '')
                 val_str = str(val).strip()
 
                 if any(h in k_clean for h in ['實核時數', '核算時數', '研習時數', '時數', '學分']):
                     if '名稱' not in k_clean and '代碼' not in k_clean:
                         hours_str = val_str
-                elif any(t in k_clean for t in ['研習課程名稱', '課程名稱', '研習名稱', '研習項目', '課程']):
+                elif any(t in k_clean for t in ['研習課程名稱', '課程名稱', '研習名稱', '研習項目']):
                     if '代碼' not in k_clean and '時數' not in k_clean:
-                        if not title or len(val_str) > len(title):
-                            title = val_str
+                        title = val_str
                 elif any(n in k_clean for n in ['教師姓名', '姓名', '研習人員', '學員', '教師']):
                     if '單位' not in k_clean and '學校' not in k_clean:
                         teacher_name = val_str
                 elif any(c in k_clean for c in ['課程代碼', '研習代碼', '課程編號', '代碼']):
                     course_code = val_str
-                elif any(d in k_clean for d in ['課程開始時間', '研習日期', '辦理日期', '日期']):
-                    course_date = val_str.split(' ')[0] if val_str else ""
+                # 精確匹配結束時間與開始時間
+                elif '結束' in k_clean and any(d in k_clean for d in ['時間', '日期']):
+                    end_date_val = val_str
+                elif '開始' in k_clean and any(d in k_clean for d in ['時間', '日期']):
+                    start_date_val = val_str
                 elif any(o in k_clean for o in ['主辦單位', '辦理單位', '開課單位']):
                     organizer = val_str
 
@@ -206,7 +230,7 @@ def import_trainings():
 
             clean_name = " ".join(teacher_name.replace(' ', ' ').split())
 
-            # 依據 3.1 基本名冊過濾，不存在則跳過
+            # 依據 3.1 基本名冊過濾
             teacher = Teacher.query.filter_by(name=clean_name).first()
             if not teacher:
                 skipped_not_in_roster += 1
@@ -217,15 +241,24 @@ def import_trainings():
             except ValueError:
                 hours = 0.0
 
-            if not course_date:
-                course_date = date.today().strftime('%Y-%m-%d')
+            # 清洗起訖日期為 YYYY-MM-DD
+            start_date_val = clean_date_str(start_date_val)
+            end_date_val = clean_date_str(end_date_val)
+
+            # 防呆：兩者若缺一，則互補；絕不隨意以今天日期覆寫
+            if not end_date_val and start_date_val:
+                end_date_val = start_date_val
+            elif not start_date_val and end_date_val:
+                start_date_val = end_date_val
+
+            course_date = end_date_val
 
             if not course_code:
                 hash_code = hashlib.md5(title.encode('utf-8')).hexdigest()[:8].upper()
                 course_code = f"AUTO-{hash_code}"
 
-            # 進行政策指標標籤匹配比對
-            matched_tags_list = TagService.parse_training_name(title, course_date, hours)
+            # 政策指標採認比對（以研習結束日期為基準）
+            matched_tags_list = TagService.parse_training_name(title, end_date_val, hours)
             matched_tags_str = ",".join(matched_tags_list) if matched_tags_list else None
 
             training = Training.query.filter_by(course_code=course_code).first()
@@ -237,6 +270,8 @@ def import_trainings():
                 training.course_code = course_code
                 training.title = title
                 training.course_date = course_date
+                training.start_date = start_date_val
+                training.end_date = end_date_val
                 training.organizer = organizer
                 
                 if hasattr(training, 'category_key'):
@@ -251,6 +286,13 @@ def import_trainings():
 
                 db.session.add(training)
                 db.session.flush()
+            else:
+                # 💡 強制更新既有主檔的結束時間與開始時間，修復先前誤記為匯入時間的紀錄
+                if end_date_val:
+                    training.end_date = end_date_val
+                    training.course_date = end_date_val
+                if start_date_val:
+                    training.start_date = start_date_val
 
             existing_record = TrainingRecord.query.filter_by(
                 teacher_id=teacher.id,
@@ -273,10 +315,14 @@ def import_trainings():
 
                 db.session.add(new_record)
                 imported_records += 1
+            else:
+                # 重新比對標籤並同步更新
+                existing_record.matched_tags = matched_tags_str
+                existing_record.updated_at = datetime.now()
 
         db.session.commit()
 
-        msg = f'研習大數據匯入完成！已成功採認與分析 3.1 名冊內教師之 {imported_records} 筆研習紀錄。'
+        msg = f'研習大數據匯入完成！已成功採認與更新 3.1 名冊內教師之 {imported_records} 筆研習紀錄。'
         extra_info = []
         if skipped_not_in_roster > 0:
             extra_info.append(f'有 {skipped_not_in_roster} 筆因「未在 3.1 教師名冊中」被跳過')
@@ -300,7 +346,7 @@ def import_trainings():
 @import_bp.route('/teachers', methods=['POST'])
 @import_bp.route('/teacher', methods=['POST'])
 def import_teachers():
-    """處理 3.1 批量匯入教師名冊 CSV / Excel (保證回傳純 JSON)"""
+    """處理 3.1 批量匯入教師名冊 CSV / Excel"""
     if not current_user.is_authenticated:
         return jsonify({'error': '承辦人登入逾時或未登入，請先登入帳號再執行匯入！'}), 401
 

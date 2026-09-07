@@ -1,81 +1,70 @@
 # routes/training_routes.py
 """
-教師研習檢核與統計管理系統 (TTVS) V2 - 3.5 教師研習查詢與審核路由模組
+教師研習檢核與統計管理系統 (TTVS) V2 - 3.5 教師研習綜合查詢與檢核模組
+包含：
+1. 動態讀取現行指標規則與中文名稱，供下拉選單即時連動
+2. 多維度查詢 (教師姓名、研習關鍵字、特定政策標籤)
+3. 支援分頁與人工審核狀態切換 API
 """
-from flask import Blueprint, render_template, request, redirect, url_for, flash
-from flask_login import login_required, current_user
-from models import db, Teacher, TrainingRecord, Training, User
+from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
+from flask_login import login_required
+from models import db, Teacher, Training, TrainingRecord
 from services.tag_service import TagService
 
 training_bp = Blueprint('training', __name__, url_prefix='/trainings')
 
 
 @training_bp.route('/', methods=['GET'])
+@training_bp.route('/list', methods=['GET'])
+@login_required
 def list_trainings():
-    """3.5 教師研習綜合查詢頁面"""
-    search_keyword = request.args.get('keyword', '').strip()
-    selected_tag = request.args.get('tag', '').strip()
-    selected_teacher_id = request.args.get('teacher_id', type=int)
+    """3.5 教師研習綜合查詢與檢核主頁面"""
+    teacher_name = request.args.get('teacher_name', '').strip()
+    course_keyword = request.args.get('course_keyword', '').strip()
+    selected_tag = request.args.get('selected_tag', '').strip()
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 50, type=int)
 
-    try:
-        # 1. 建立基礎查詢，關聯 Teacher 與 Training
-        query = db.session.query(TrainingRecord).join(Teacher).join(Training)
+    # 1. 動態讀取現行所有指標標籤與顯示名稱 (同步 tag/settings 最新設定)
+    current_rules = TagService.get_rules()
+    all_tags = list(dict.fromkeys(TagService.PRESET_TAGS + list(current_rules.keys())))
+    tag_display_names = {tag: TagService.get_display_name(tag) for tag in all_tags}
 
-        # 2. 條件篩選：關鍵字 (姓名、職稱、研習名稱、課程代碼)
-        if search_keyword:
-            query = query.filter(
-                (Teacher.name.like(f"%{search_keyword}%")) |
-                (Teacher.position.like(f"%{search_keyword}%")) |
-                (Training.title.like(f"%{search_keyword}%")) |
-                (Training.course_code.like(f"%{search_keyword}%"))
-            )
+    # 2. 聯集查詢 TrainingRecord, Teacher, Training
+    query = db.session.query(TrainingRecord, Teacher, Training).join(
+        Teacher, TrainingRecord.teacher_id == Teacher.id
+    ).join(
+        Training, TrainingRecord.training_id == Training.id
+    )
 
-        # 3. 條件篩選：特定標籤 (如 A1, B5-1)
-        if selected_tag:
-            query = query.filter(TrainingRecord.matched_tags.like(f"%{selected_tag}%"))
+    if teacher_name:
+        query = query.filter(Teacher.name.like(f'%{teacher_name}%'))
+    if course_keyword:
+        query = query.filter(Training.title.like(f'%{course_keyword}%'))
+    if selected_tag:
+        query = query.filter(TrainingRecord.matched_tags.like(f'%{selected_tag}%'))
 
-        # 4. 條件篩選：特定教師
-        if selected_teacher_id:
-            query = query.filter(TrainingRecord.teacher_id == selected_teacher_id)
-
-        # 取得前 500 筆紀錄避免網頁過載
-        records = query.order_by(TrainingRecord.id.desc()).limit(500).all()
-
-        # 取得所有教師選單以供下拉式選單篩選
-        teachers = Teacher.query.order_by(Teacher.position, Teacher.name).all()
-
-    except Exception as e:
-        print(f"❌ 查詢研習紀錄時發生錯誤: {e}")
-        records = []
-        teachers = []
-        flash(f"查詢研習紀錄時發生資料庫錯誤: {e}", "danger")
+    query = query.order_by(Training.course_date.desc(), TrainingRecord.id.desc())
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
 
     return render_template(
         'trainings.html',
-        records=records,
-        teachers=teachers,
-        search_keyword=search_keyword,
+        pagination=pagination,
+        records=pagination.items,
+        all_tags=all_tags,
+        tag_display_names=tag_display_names,
         selected_tag=selected_tag,
-        selected_teacher_id=selected_teacher_id
+        teacher_name=teacher_name,
+        course_keyword=course_keyword
     )
 
 
-@training_bp.route('/toggle-pass/<int:record_id>', methods=['POST'])
+@training_bp.route('/audit/<int:record_id>', methods=['POST'])
 @login_required
-def toggle_pass(record_id):
-    """人工勾選採認 / 撤銷採認 API"""
+def toggle_audit(record_id):
+    """人工勾選審核切換 API"""
     record = TrainingRecord.query.get_or_404(record_id)
-    
-    try:
-        record.passed = not record.passed
-        record.is_manual = True
-        record.reviewed_by_id = current_user.id
-        db.session.commit()
-        
-        status_str = "採認通過" if record.passed else "取消採認"
-        flash(f"已成功將紀錄 #{record.id} 標記為：{status_str}！", "success")
-    except Exception as e:
-        db.session.rollback()
-        flash(f"更新審核狀態失敗: {e}", "danger")
-
-    return redirect(request.referrer or url_for('training.list_trainings'))
+    data = request.get_json() or {}
+    record.passed = bool(data.get('passed', False))
+    db.session.commit()
+    return jsonify({'success': True, 'passed': record.passed})
